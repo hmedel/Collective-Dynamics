@@ -196,7 +196,6 @@ function arc_length_ellipse(θ1::T, θ2::T, a::T, b::T) where {T <: AbstractFloa
     # Usar Elliptic.E para integral elíptica
     # Nota: Elliptic.jl define E(φ, m) = ∫₀^φ √(1 - m sin²t) dt
     # Necesitamos transformar nuestra integral
-    using Elliptic: E
 
     # Aproximación: Para ángulos pequeños usamos la métrica local
     # Para ángulos grandes, usamos la integral elíptica completa
