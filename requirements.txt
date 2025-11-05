@@ -1,0 +1,16 @@
+# Core dependencies
+numpy>=1.20.0
+scipy>=1.7.0
+matplotlib>=3.3.0
+
+# Jupyter notebooks
+jupyter>=1.0.0
+ipywidgets>=7.6.0
+
+# Optional but recommended
+ipympl>=0.8.0  # For interactive matplotlib in notebooks
+
+# Development dependencies (optional)
+pytest>=6.0.0
+black>=21.0
+flake8>=3.9.0
