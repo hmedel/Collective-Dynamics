@@ -7,6 +7,7 @@ Implementa métricas para variedades curvas (elipse, esfera, etc.).
 
 using StaticArrays
 using LinearAlgebra
+using Elliptic
 
 # ============================================================================
 # Métrica de Elipse en coordenadas angulares θ
