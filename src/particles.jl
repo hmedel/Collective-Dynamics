@@ -212,23 +212,33 @@ Calcula automáticamente las coordenadas cartesianas desde θ.
 """
 function initialize_particle(
     id::Integer,
-    mass::T,
-    radius::T,
-    θ::T,
-    θ_dot::T,
-    a::T,
-    b::T
-) where {T <: AbstractFloat}
+    mass::Real,
+    radius::Real,
+    θ::Real,
+    θ_dot::Real,
+    a::Real,
+    b::Real
+)
+    # Promote all arguments to a common floating point type
+    T = promote_type(typeof(mass), typeof(radius), typeof(θ), typeof(θ_dot), typeof(a), typeof(b))
+    T = T <: AbstractFloat ? T : Float64
 
-    pos = cartesian_from_angle(θ, a, b)
-    vel = velocity_from_angular(θ, θ_dot, a, b)
+    mass_T = convert(T, mass)
+    radius_T = convert(T, radius)
+    θ_T = convert(T, θ)
+    θ_dot_T = convert(T, θ_dot)
+    a_T = convert(T, a)
+    b_T = convert(T, b)
+
+    pos = cartesian_from_angle(θ_T, a_T, b_T)
+    vel = velocity_from_angular(θ_T, θ_dot_T, a_T, b_T)
 
     return Particle{T}(
         Int32(id),
-        mass,
-        radius,
-        θ,
-        θ_dot,
+        mass_T,
+        radius_T,
+        θ_T,
+        θ_dot_T,
         pos,
         vel
     )

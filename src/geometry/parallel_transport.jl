@@ -59,7 +59,7 @@ es proporcional a la curvatura local.
 """
 @inline function parallel_transport_velocity(
     v_old::T, Δθ::T, θ::T, a::T, b::T
-) where {T <: AbstractFloat}
+) where {T <: Real}
 
     # Símbolo de Christoffel en el punto θ
     Γ = christoffel_ellipse(θ, a, b)
@@ -85,7 +85,7 @@ parallel_transport_velocity!(Ref(θ_dot), 0.01, π/4, 2.0, 1.0)
 """
 @inline function parallel_transport_velocity!(
     v::Ref{T}, Δθ::T, θ::T, a::T, b::T
-) where {T <: AbstractFloat}
+) where {T <: Real}
 
     Γ = christoffel_ellipse(θ, a, b)
     v[] = v[] - Γ * v[] * Δθ
@@ -125,7 +125,7 @@ function parallel_transport_path(
     θ_path::AbstractVector{T},
     a::T,
     b::T
-) where {T <: AbstractFloat}
+) where {T <: Real}
 
     n = length(θ_path)
     v_transported = Vector{T}(undef, n)
@@ -183,7 +183,7 @@ function parallel_transport_cartesian_velocity(
     θ_new::T,
     a::T,
     b::T
-) where {T <: AbstractFloat}
+) where {T <: Real}
 
     # 1. Vector tangente en θ_old
     s_old, c_old = sincos(θ_old)
@@ -233,7 +233,7 @@ con la posición.
 """
 function verify_parallel_transport_norm(
     v_old::T, v_new::T, θ_old::T, θ_new::T, a::T, b::T
-) where {T <: AbstractFloat}
+) where {T <: Real}
 
     # Métrica en puntos antiguo y nuevo
     g_old = metric_ellipse(θ_old, a, b)
@@ -276,7 +276,7 @@ function holonomy_angle(
     θ_path::AbstractVector{T},
     a::T,
     b::T
-) where {T <: AbstractFloat}
+) where {T <: Real}
 
     # Transportar un vector unitario alrededor del loop
     v_initial = one(T)
@@ -295,7 +295,7 @@ end
 
 # Incluir localmente si no están definidas
 if !@isdefined(christoffel_ellipse)
-    @inline function christoffel_ellipse(θ::T, a::T, b::T) where {T <: AbstractFloat}
+    @inline function christoffel_ellipse(θ::T, a::T, b::T) where {T <: Real}
         s, c = sincos(θ)
         numerator = (a^2 - b^2) * s * c
         denominator = a^2 * s^2 + b^2 * c^2
@@ -304,7 +304,7 @@ if !@isdefined(christoffel_ellipse)
 end
 
 if !@isdefined(metric_ellipse)
-    @inline function metric_ellipse(θ::T, a::T, b::T) where {T <: AbstractFloat}
+    @inline function metric_ellipse(θ::T, a::T, b::T) where {T <: Real}
         s, c = sincos(θ)
         return a^2 * s^2 + b^2 * c^2
     end
