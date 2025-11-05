@@ -55,7 +55,7 @@ println("\n🔍 VERIFICANDO INSTALACIÓN...\n")
 println("━" ^ 70)
 
 # Test 1: Versión de Julia
-test_step("1. Verificar versión de Julia (≥ 1.9)") do
+test_step("1. Verificar versión de Julia (≥ 1.9)", () -> begin
     version_str = string(VERSION)
     major, minor = VERSION.major, VERSION.minor
     if major > 1 || (major == 1 && minor >= 9)
@@ -65,10 +65,10 @@ test_step("1. Verificar versión de Julia (≥ 1.9)") do
         println("   → Julia v$version_str (se requiere ≥ 1.9)")
         return false
     end
-end
+end)
 
 # Test 2: Proyecto activado
-test_step("2. Verificar que el proyecto está activado") do
+test_step("2. Verificar que el proyecto está activado", () -> begin
     if isfile("Project.toml")
         println("   → Project.toml encontrado")
         return true
@@ -76,7 +76,7 @@ test_step("2. Verificar que el proyecto está activado") do
         println("   → Project.toml NO encontrado")
         return false
     end
-end
+end)
 
 # Test 3: Dependencias críticas
 critical_packages = [
@@ -87,7 +87,7 @@ critical_packages = [
 ]
 
 for pkg in critical_packages
-    test_step("3. Cargar paquete: $pkg") do
+    test_step("3. Cargar paquete: $pkg", () -> begin
         try
             # Intentar cargar el paquete
             if pkg == "LinearAlgebra"
@@ -103,11 +103,11 @@ for pkg in critical_packages
         catch
             return false
         end
-    end
+    end)
 end
 
 # Test 4: Cargar módulo principal
-test_step("4. Cargar módulo CollectiveDynamics") do
+test_step("4. Cargar módulo CollectiveDynamics", () -> begin
     # Asegurarse de que src/ esté en LOAD_PATH
     if !("src" in LOAD_PATH)
         push!(LOAD_PATH, joinpath(pwd(), "src"))
@@ -120,48 +120,48 @@ test_step("4. Cargar módulo CollectiveDynamics") do
         println("   → Error: $e")
         return false
     end
-end
+end)
 
 # Test 5: Verificar funciones principales
 using CollectiveDynamics
 
-test_step("5. Verificar función: metric_ellipse") do
+test_step("5. Verificar función: metric_ellipse", () -> begin
     try
         result = metric_ellipse(π/4, 2.0, 1.0)
         return isfinite(result) && result > 0
     catch
         return false
     end
-end
+end)
 
-test_step("6. Verificar función: christoffel_ellipse") do
+test_step("6. Verificar función: christoffel_ellipse", () -> begin
     try
         result = christoffel_ellipse(π/4, 2.0, 1.0)
         return isfinite(result)
     catch
         return false
     end
-end
+end)
 
-test_step("7. Verificar función: forest_ruth_step_ellipse") do
+test_step("7. Verificar función: forest_ruth_step_ellipse", () -> begin
     try
         θ, θ_dot = forest_ruth_step_ellipse(0.0, 1.0, 0.01, 2.0, 1.0)
         return isfinite(θ) && isfinite(θ_dot)
     catch
         return false
     end
-end
+end)
 
-test_step("8. Verificar función: generate_random_particles") do
+test_step("8. Verificar función: generate_random_particles", () -> begin
     try
         particles = generate_random_particles(5, 1.0, 0.05, 2.0, 1.0)
         return length(particles) == 5
     catch
         return false
     end
-end
+end)
 
-test_step("9. Verificar función: simulate_ellipse") do
+test_step("9. Verificar función: simulate_ellipse", () -> begin
     try
         particles = generate_random_particles(3, 1.0, 0.05, 2.0, 1.0)
         data = simulate_ellipse(
@@ -175,10 +175,10 @@ test_step("9. Verificar función: simulate_ellipse") do
         println("   → Error: $e")
         return false
     end
-end
+end)
 
 # Test 10: Conservación de energía (test crítico)
-test_step("10. Verificar conservación de energía (test rápido)") do
+test_step("10. Verificar conservación de energía (test rápido)", () -> begin
     try
         particles = generate_random_particles(5, 1.0, 0.05, 2.0, 1.0)
         data = simulate_ellipse(
@@ -203,7 +203,7 @@ test_step("10. Verificar conservación de energía (test rápido)") do
         println("   → Error: $e")
         return false
     end
-end
+end)
 
 # ============================================================================
 # Resumen
