@@ -259,10 +259,43 @@ Pkg.test("CollectiveDynamics")
 
 ---
 
-## 📚 Documentación Adicional
+## 📚 Documentación Completa
 
-- **[ANALYSIS.md](ANALYSIS.md)**: Análisis detallado del código original vs. optimizado
-- **Artículo**: *"Collision Dynamics on Curved Manifolds"* (próximamente en arXiv)
+### 📖 Guías de Usuario
+- **[QUICKSTART.md](QUICKSTART.md)** - Inicio rápido en 5 minutos
+- **[INSTALL.md](INSTALL.md)** - Guía completa de instalación
+- **[README.md](README.md)** - Este documento (introducción general)
+
+### 🔬 Documentación Técnica Exhaustiva
+- **[docs/GEOMETRY_TECHNICAL.md](docs/GEOMETRY_TECHNICAL.md)** - Geometría diferencial completa
+  - Métricas de Riemann
+  - Símbolos de Christoffel (analítico, numérico, autodiff)
+  - Transporte paralelo
+  - Derivaciones matemáticas completas
+
+- **[docs/INTEGRATOR_TECHNICAL.md](docs/INTEGRATOR_TECHNICAL.md)** - Integrador Forest-Ruth
+  - Teoría de integradores simplécticos
+  - Implementación orden 4
+  - Propiedades simplécticas
+  - Benchmarks y comparaciones
+
+- **[docs/COMPLETE_TECHNICAL_DOCUMENTATION.md](docs/COMPLETE_TECHNICAL_DOCUMENTATION.md)** - Sistema completo
+  - Sistema de partículas
+  - Colisiones en variedades curvas
+  - Conservación y análisis
+  - Arquitectura del sistema
+  - Guía de desarrollo
+  - API Reference completa
+
+### 📊 Análisis
+- **[ANALYSIS.md](ANALYSIS.md)** - Código original vs optimizado (~2000x speedup)
+
+### 📑 Índice
+- **[docs/INDEX.md](docs/INDEX.md)** - Índice completo de toda la documentación
+
+### 📄 Artículo
+- *"Collision Dynamics on Curved Manifolds: A Simple Symplectic Computational Approach"*
+  García-Hernández & Medel-Cobaxín (2024) - Próximamente en arXiv
 
 ---
 
