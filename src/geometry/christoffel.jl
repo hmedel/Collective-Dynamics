@@ -51,7 +51,7 @@ g_θθ = a² sin²(θ) + b² cos²(θ)
 El símbolo de Christoffel puede ser positivo o negativo dependiendo del cuadrante.
 Esto es correcto geométricamente y representa la curvatura local.
 """
-@inline function christoffel_ellipse(θ::T, a::T, b::T) where {T <: AbstractFloat}
+@inline function christoffel_ellipse(θ::T, a::T, b::T) where {T <: Real}
     s, c = sincos(θ)
 
     # Numerador: (a² - b²) sin(θ)cos(θ)
@@ -73,7 +73,7 @@ end
 
 Versión alternativa usando la derivada de la métrica desde metrics.jl.
 """
-@inline function christoffel_ellipse_alt(θ::T, a::T, b::T) where {T <: AbstractFloat}
+@inline function christoffel_ellipse_alt(θ::T, a::T, b::T) where {T <: Real}
     g = metric_ellipse(θ, a, b)
     ∂g = metric_derivative_ellipse(θ, a, b)
 
@@ -121,7 +121,7 @@ function christoffel_numerical(
     metric_func::Function,
     q::T,
     h::T = T(1e-6)
-) where {T <: AbstractFloat}
+) where {T <: Real}
 
     # Diferencias finitas centradas para la derivada de la métrica
     g_plus = metric_func(q + h)
@@ -159,7 +159,7 @@ metric_fn(θ) = metric_ellipse(θ, 2.0, 1.0)
 function christoffel_autodiff(
     metric_func::Function,
     q::T
-) where {T <: AbstractFloat}
+) where {T <: Real}
 
     # Derivada automática de la métrica
     ∂g = ForwardDiff.derivative(metric_func, q)
@@ -205,7 +205,7 @@ Si hay colisiones u otras fuerzas, se añaden términos adicionales.
 """
 @inline function geodesic_acceleration(
     θ::T, θ_dot::T, a::T, b::T
-) where {T <: AbstractFloat}
+) where {T <: Real}
     Γ = christoffel_ellipse(θ, a, b)
     return -Γ * θ_dot^2
 end
@@ -225,7 +225,7 @@ y para extensiones a dimensiones superiores.
 # Retorna
 - `true` si la simetría se satisface dentro de tolerancia numérica
 """
-function verify_christoffel_symmetry(θ::T, a::T, b::T, tol::T = T(1e-10)) where {T <: AbstractFloat}
+function verify_christoffel_symmetry(θ::T, a::T, b::T, tol::T = T(1e-10)) where {T <: Real}
     # Para 1D, Γ^θ_θθ es trivialmente simétrico
     # Esta función es un placeholder para extensiones futuras
     return true
@@ -244,7 +244,7 @@ Compara los tres métodos de cálculo de Christoffel:
 # Retorna
 - NamedTuple con (analytic, numerical, autodiff, max_diff)
 """
-function compare_christoffel_methods(θ::T, a::T, b::T) where {T <: AbstractFloat}
+function compare_christoffel_methods(θ::T, a::T, b::T) where {T <: Real}
     # Analítico
     Γ_analytic = christoffel_ellipse(θ, a, b)
 
@@ -277,12 +277,12 @@ end
 
 # Incluir localmente si metrics.jl no está cargado
 if !@isdefined(metric_ellipse)
-    @inline function metric_ellipse(θ::T, a::T, b::T) where {T <: AbstractFloat}
+    @inline function metric_ellipse(θ::T, a::T, b::T) where {T <: Real}
         s, c = sincos(θ)
         return a^2 * s^2 + b^2 * c^2
     end
 
-    @inline function metric_derivative_ellipse(θ::T, a::T, b::T) where {T <: AbstractFloat}
+    @inline function metric_derivative_ellipse(θ::T, a::T, b::T) where {T <: Real}
         return (a^2 - b^2) * sin(2 * θ)
     end
 end
