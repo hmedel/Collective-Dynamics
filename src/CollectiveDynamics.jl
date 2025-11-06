@@ -67,6 +67,9 @@ include("collisions.jl")
 # Tiempos adaptativos
 include("adaptive_time.jl")
 
+# Entrada/Salida
+include("io.jl")
+
 # Conservación
 include("conservation.jl")
 

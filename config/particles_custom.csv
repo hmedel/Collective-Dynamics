@@ -1,0 +1,15 @@
+# Archivo de partículas personalizadas
+# Formato: id,mass,radius,theta,theta_dot
+# - id: identificador único (entero)
+# - mass: masa de la partícula
+# - radius: radio de la partícula
+# - theta: posición angular inicial (radianes, 0 a 2π)
+# - theta_dot: velocidad angular inicial (rad/s)
+#
+# Ejemplo: 5 partículas distribuidas uniformemente con velocidades variadas
+id,mass,radius,theta,theta_dot
+1,1.0,0.05,0.0,0.5
+2,1.0,0.05,1.2566,0.8
+3,1.0,0.05,2.5133,-0.3
+4,1.0,0.05,3.7699,0.6
+5,1.0,0.05,5.0265,-0.7
