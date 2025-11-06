@@ -67,9 +67,6 @@ include("collisions.jl")
 # Tiempos adaptativos
 include("adaptive_time.jl")
 
-# Entrada/Salida
-include("io.jl")
-
 # Conservación
 include("conservation.jl")
 
@@ -563,6 +560,12 @@ function simulate_ellipse_adaptive(
 end
 
 export simulate_ellipse_adaptive
+
+# ============================================================================
+# Entrada/Salida (después de SimulationData)
+# ============================================================================
+
+include("io.jl")
 
 # ============================================================================
 # Versión Info
