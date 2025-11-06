@@ -170,6 +170,11 @@ Esto es válido porque dt es pequeño y la aceleración geodésica
         sep_mid = separation_at_time(t_mid)
 
         if abs(sep_mid) < tolerance || (t_max - t_min) < tolerance
+            # Verificar que el tiempo encontrado sea razonable
+            # Si es extremadamente pequeño (< 1e-12), probablemente es un artefacto numérico
+            if t_mid < T(1e-12)
+                return T(Inf)
+            end
             return t_mid
         end
 
@@ -181,7 +186,14 @@ Esto es válido porque dt es pequeño y la aceleración geodésica
     end
 
     # Retornar mejor estimación
-    return (t_min + t_max) / 2
+    t_collision = (t_min + t_max) / 2
+
+    # Verificar que el tiempo sea razonable antes de retornar
+    if t_collision < T(1e-12)
+        return T(Inf)
+    end
+
+    return t_collision
 end
 
 """
