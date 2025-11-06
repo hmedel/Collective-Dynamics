@@ -47,6 +47,8 @@ push!(momenta, p0)
 
 # Simular
 for step in 1:n_steps
+    global n_collisions_total
+
     # Paso 1: Integrar
     for i in 1:length(particles)
         p = particles[i]
