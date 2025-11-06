@@ -11,7 +11,7 @@ Implementación optimizada del algoritmo descrito en:
 
 ---
 
-## 🎯 Características Principales
+##  Características Principales
 
 - ✅ **Geometría Diferencial Aplicada**: Métricas, símbolos de Christoffel, transporte paralelo
 - ✅ **Integrador Simpléctico Forest-Ruth**: 4to orden, conservación de energía O(dt⁴)
@@ -22,7 +22,7 @@ Implementación optimizada del algoritmo descrito en:
 
 ---
 
-## 📦 Instalación
+##  Instalación
 
 ```julia
 # Desde el REPL de Julia
@@ -40,7 +40,7 @@ Pkg.add(["StaticArrays", "ForwardDiff", "Elliptic", "DataFrames", "CSV", "GLMaki
 
 ---
 
-## 🚀 Uso Rápido
+##  Uso Rápido
 
 ```julia
 using CollectiveDynamics
@@ -65,7 +65,7 @@ print_conservation_summary(data.conservation)
 
 **Salida esperada:**
 ```
-📊 ENERGÍA:
+ ENERGÍA:
   Inicial:           1.234567e+08
   Final:             1.234566e+08
   Error relativo max: 8.23e-05
@@ -74,7 +74,7 @@ print_conservation_summary(data.conservation)
 
 ---
 
-## 📊 Resultados del Artículo
+##  Resultados del Artículo
 
 Nuestro método demuestra:
 
@@ -86,7 +86,7 @@ Nuestro método demuestra:
 
 ---
 
-## 🧮 Fundamento Matemático
+##  Fundamento Matemático
 
 ### Ecuación Geodésica
 
@@ -122,7 +122,7 @@ g_{\theta\theta} = a^2 \sin^2(\theta) + b^2 \cos^2(\theta)
 
 ---
 
-## 🗂️ Estructura del Proyecto
+##  Estructura del Proyecto
 
 ```
 Collective-Dynamics/
@@ -147,7 +147,7 @@ Collective-Dynamics/
 
 ---
 
-## 🔬 Ejemplos
+##  Ejemplos
 
 ### 1. Verificar Conservación de Energía
 
@@ -215,7 +215,7 @@ println("AutoDiff:   ", Γ_autodiff)
 
 ---
 
-## 📈 Performance
+##  Performance
 
 ### Mejoras respecto al código original:
 
@@ -229,13 +229,13 @@ println("AutoDiff:   ", Γ_autodiff)
 
 ### Próximas optimizaciones:
 
-- 🚧 **Threads.jl**: Paralelización CPU (5-8x en 8 cores)
-- 🚧 **CUDA.jl**: Paralelización GPU (50-200x para n > 10,000)
-- 🚧 **Spatial hashing**: Detección de colisiones O(n) vs. O(n²)
+-  **Threads.jl**: Paralelización CPU (5-8x en 8 cores)
+-  **CUDA.jl**: Paralelización GPU (50-200x para n > 10,000)
+-  **Spatial hashing**: Detección de colisiones O(n) vs. O(n²)
 
 ---
 
-## 🧪 Tests
+##  Tests
 
 Ejecutar todos los tests:
 
@@ -259,14 +259,14 @@ Pkg.test("CollectiveDynamics")
 
 ---
 
-## 📚 Documentación Completa
+##  Documentación Completa
 
-### 📖 Guías de Usuario
+###  Guías de Usuario
 - **[QUICKSTART.md](QUICKSTART.md)** - Inicio rápido en 5 minutos
 - **[INSTALL.md](INSTALL.md)** - Guía completa de instalación
 - **[README.md](README.md)** - Este documento (introducción general)
 
-### 🔬 Documentación Técnica Exhaustiva
+###  Documentación Técnica Exhaustiva
 - **[docs/GEOMETRY_TECHNICAL.md](docs/GEOMETRY_TECHNICAL.md)** - Geometría diferencial completa
   - Métricas de Riemann
   - Símbolos de Christoffel (analítico, numérico, autodiff)
@@ -287,19 +287,19 @@ Pkg.test("CollectiveDynamics")
   - Guía de desarrollo
   - API Reference completa
 
-### 📊 Análisis
+###  Análisis
 - **[ANALYSIS.md](ANALYSIS.md)** - Código original vs optimizado (~2000x speedup)
 
-### 📑 Índice
+###  Índice
 - **[docs/INDEX.md](docs/INDEX.md)** - Índice completo de toda la documentación
 
-### 📄 Artículo
+###  Artículo
 - *"Collision Dynamics on Curved Manifolds: A Simple Symplectic Computational Approach"*
   García-Hernández & Medel-Cobaxín (2024) - Próximamente en arXiv
 
 ---
 
-## 🤝 Contribuciones
+##  Contribuciones
 
 ¡Contribuciones son bienvenidas! Por favor:
 
@@ -311,13 +311,13 @@ Pkg.test("CollectiveDynamics")
 
 ---
 
-## 📄 Licencia
+##  Licencia
 
 Este proyecto está licenciado bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para detalles.
 
 ---
 
-## ✍️ Autores
+##  Autores
 
 - **J. Isaí García-Hernández** - [A01709199@tec.mx](mailto:A01709199@tec.mx)
 - **Héctor J. Medel-Cobaxín** - [hmedel@tec.mx](mailto:hmedel@tec.mx)
@@ -326,7 +326,7 @@ Este proyecto está licenciado bajo la Licencia MIT - ver el archivo [LICENSE](L
 
 ---
 
-## 🙏 Agradecimientos
+##  Agradecimientos
 
 - Forest & Ruth por el integrador simpléctico (1990)
 - do Carmo por *Riemannian Geometry* (1992)
@@ -334,7 +334,7 @@ Este proyecto está licenciado bajo la Licencia MIT - ver el archivo [LICENSE](L
 
 ---
 
-## 📞 Contacto
+##  Contacto
 
 ¿Preguntas? ¿Sugerencias? Abre un [issue](https://github.com/tuusuario/Collective-Dynamics/issues) o contacta a los autores.
 
