@@ -299,7 +299,7 @@ if !@isdefined(christoffel_ellipse)
         s, c = sincos(θ)
         numerator = (a^2 - b^2) * s * c
         denominator = a^2 * s^2 + b^2 * c^2
-        return abs(denominator) < eps(T) ? zero(T) : numerator / denominator
+        return abs(denominator) < eps(typeof(denominator)) ? zero(denominator) : numerator / denominator
     end
 end
 

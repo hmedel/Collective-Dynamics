@@ -77,7 +77,7 @@ Para una métrica 1D (parametrización angular), la inversa es simplemente el re
 """
 @inline function inverse_metric_ellipse(θ::T1, a::T2, b::T3) where {T1<:Real, T2<:Real, T3<:Real}
     g = metric_ellipse(θ, a, b)
-    return one(T) / g
+    return one(g) / g
 end
 
 # ============================================================================
@@ -120,6 +120,7 @@ Convierte coordenadas angulares θ a coordenadas cartesianas (x, y) en la elipse
 """
 @inline function cartesian_from_angle(θ::T1, a::T2, b::T3) where {T1<:Real, T2<:Real, T3<:Real}
     s, c = sincos(θ)
+    T = promote_type(T1, T2, T3)
     return SVector{2,T}(a * c, b * s)
 end
 
@@ -137,10 +138,11 @@ dy/dt =  b cos(θ) dθ/dt
 # Retorna
 - `SVector{2}(vx, vy)`: Velocidad cartesiana
 """
-@inline function velocity_from_angular(θ::T, θ_dot::T, a::T, b::T) where {T <: Real}
+@inline function velocity_from_angular(θ::T1, θ_dot::T2, a::T3, b::T4) where {T1<:Real, T2<:Real, T3<:Real, T4<:Real}
     s, c = sincos(θ)
     vx = -a * θ_dot * s
     vy =  b * θ_dot * c
+    T = promote_type(T1, T2, T3, T4)
     return SVector{2,T}(vx, vy)
 end
 

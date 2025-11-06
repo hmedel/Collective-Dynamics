@@ -61,8 +61,8 @@ Esto es correcto geométricamente y representa la curvatura local.
     denominator = a^2 * s^2 + b^2 * c^2
 
     # Evitar división por cero (aunque matemáticamente no debería ocurrir)
-    if abs(denominator) < eps(T)
-        return zero(T)
+    if abs(denominator) < eps(typeof(denominator))
+        return zero(denominator)
     end
 
     return numerator / denominator
@@ -77,8 +77,8 @@ Versión alternativa usando la derivada de la métrica desde metrics.jl.
     g = metric_ellipse(θ, a, b)
     ∂g = metric_derivative_ellipse(θ, a, b)
 
-    if abs(g) < eps(T)
-        return zero(T)
+    if abs(g) < eps(typeof(g))
+        return zero(g)
     end
 
     return ∂g / (2 * g)
@@ -131,8 +131,8 @@ function christoffel_numerical(
     # Métrica en el punto actual
     g = metric_func(q)
 
-    if abs(g) < eps(T)
-        return zero(T)
+    if abs(g) < eps(typeof(g))
+        return zero(g)
     end
 
     # Para 1D: Γ^q_qq = (1/2g) ∂_q g
@@ -167,8 +167,8 @@ function christoffel_autodiff(
     # Métrica en el punto
     g = metric_func(q)
 
-    if abs(g) < eps(T)
-        return zero(T)
+    if abs(g) < eps(typeof(g))
+        return zero(g)
     end
 
     return ∂g / (2 * g)
