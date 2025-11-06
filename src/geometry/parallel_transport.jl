@@ -295,16 +295,16 @@ end
 
 # Incluir localmente si no están definidas
 if !@isdefined(christoffel_ellipse)
-    @inline function christoffel_ellipse(θ::T1, a::T2, b::T3) where {T1<:Real, T2<:Real, T3<:Real}
+    @inline function christoffel_ellipse(θ::Real, a::Real, b::Real)
         s, c = sincos(θ)
         numerator = (a^2 - b^2) * s * c
         denominator = a^2 * s^2 + b^2 * c^2
-        return abs(denominator) < eps(T) ? zero(T) : numerator / denominator
+        return abs(denominator) < eps(typeof(denominator)) ? zero(denominator) : numerator / denominator
     end
 end
 
 if !@isdefined(metric_ellipse)
-    @inline function metric_ellipse(θ::T1, a::T2, b::T3) where {T1<:Real, T2<:Real, T3<:Real}
+    @inline function metric_ellipse(θ::Real, a::Real, b::Real)
         s, c = sincos(θ)
         return a^2 * s^2 + b^2 * c^2
     end

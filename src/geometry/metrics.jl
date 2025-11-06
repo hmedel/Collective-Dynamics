@@ -45,7 +45,7 @@ Por lo tanto: g_θθ = a² sin²(θ) + b² cos²(θ)
 g = metric_ellipse(π/4, 2.0, 1.0)  # g_θθ en θ = π/4
 ```
 """
-@inline function metric_ellipse(θ::T1, a::T2, b::T3) where {T1<:Real, T2<:Real, T3<:Real}
+@inline function metric_ellipse(θ::Real, a::Real, b::Real)
     s, c = sincos(θ)
     return a^2 * s^2 + b^2 * c^2
 end
@@ -56,9 +56,9 @@ end
 Retorna el tensor métrico completo (1x1 en este caso) como SMatrix.
 Útil para generalizaciones futuras.
 """
-@inline function metric_ellipse_tensor(θ::T1, a::T2, b::T3) where {T1<:Real, T2<:Real, T3<:Real}
+@inline function metric_ellipse_tensor(θ::Real, a::Real, b::Real)
     g = metric_ellipse(θ, a, b)
-    return SMatrix{1,1,T}(g)
+    return SMatrix{1,1}(g)
 end
 
 # ============================================================================
@@ -75,9 +75,9 @@ Para una métrica 1D (parametrización angular), la inversa es simplemente el re
 # Retorna
 - g^θθ(θ)
 """
-@inline function inverse_metric_ellipse(θ::T1, a::T2, b::T3) where {T1<:Real, T2<:Real, T3<:Real}
+@inline function inverse_metric_ellipse(θ::Real, a::Real, b::Real)
     g = metric_ellipse(θ, a, b)
-    return one(T) / g
+    return one(g) / g
 end
 
 # ============================================================================
@@ -101,7 +101,7 @@ g_θθ = a² sin²(θ) + b² cos²(θ)
 # Retorna
 - ∂_θ g_θθ
 """
-@inline function metric_derivative_ellipse(θ::T1, a::T2, b::T3) where {T1<:Real, T2<:Real, T3<:Real}
+@inline function metric_derivative_ellipse(θ::Real, a::Real, b::Real)
     # Versión optimizada usando sin(2θ) = 2sin(θ)cos(θ)
     return (a^2 - b^2) * sin(2 * θ)
 end
@@ -118,9 +118,9 @@ Convierte coordenadas angulares θ a coordenadas cartesianas (x, y) en la elipse
 # Retorna
 - `SVector{2}(x, y)`: Posición cartesiana
 """
-@inline function cartesian_from_angle(θ::T1, a::T2, b::T3) where {T1<:Real, T2<:Real, T3<:Real}
+@inline function cartesian_from_angle(θ::Real, a::Real, b::Real)
     s, c = sincos(θ)
-    return SVector{2,T}(a * c, b * s)
+    return SVector(a * c, b * s)
 end
 
 """
@@ -137,11 +137,11 @@ dy/dt =  b cos(θ) dθ/dt
 # Retorna
 - `SVector{2}(vx, vy)`: Velocidad cartesiana
 """
-@inline function velocity_from_angular(θ::T, θ_dot::T, a::T, b::T) where {T <: Real}
+@inline function velocity_from_angular(θ::Real, θ_dot::Real, a::Real, b::Real)
     s, c = sincos(θ)
     vx = -a * θ_dot * s
     vy =  b * θ_dot * c
-    return SVector{2,T}(vx, vy)
+    return SVector(vx, vy)
 end
 
 # ============================================================================
