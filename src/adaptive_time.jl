@@ -61,26 +61,53 @@ Esto es válido porque dt es pequeño y la aceleración geodésica
     p2::Particle{T},
     a::T,
     b::T;
-    max_time::T = T(Inf)
+    max_time::T = T(Inf),
+    min_separation_check::T = T(1.1)  # Factor multiplicativo sobre radios
 ) where {T <: AbstractFloat}
 
-    # Si ya están colisionando, tiempo = 0
-    if check_collision(p1, p2, a, b)
-        return zero(T)
-    end
-
-    θ1, θ2 = p1.θ, p2.θ
-    θ_dot1, θ_dot2 = p1.θ_dot, p2.θ_dot
+    # Si ya están colisionando O muy cerca, retornar tiempo pequeño pero no cero
+    # Esto evita detección inmediata después de colisión
     r_sum = p1.radius + p2.radius
 
-    # Velocidad relativa (aproximada)
-    θ_rel = θ2 - θ1
+    θ1, θ2 = p1.θ, p2.θ
+    Δθ = abs(θ2 - θ1)
+    Δθ = min(Δθ, 2*T(π) - Δθ)
+    θ_mid = (θ1 + θ2) / 2
+    g_mid = sqrt(metric_ellipse(θ_mid, a, b))
+    current_distance = g_mid * Δθ
+
+    # Si están muy cerca (dentro de min_separation_check * suma de radios),
+    # retornar un tiempo pequeño para permitir que se separen
+    if current_distance < min_separation_check * r_sum
+        return T(1e-9)  # Tiempo pequeño para dar chance de separación
+    end
+
+    # Obtener velocidades
+    θ_dot1, θ_dot2 = p1.θ_dot, p2.θ_dot
+
+    # Velocidad relativa
     θ_dot_rel = θ_dot2 - θ_dot1
 
-    # Si se alejan (aproximación de primer orden), no colisionan
-    # Derivada de la separación: d/dt(θ2 - θ1) = θ_dot2 - θ_dot1
-    if abs(θ_dot_rel) < eps(T)
-        # Velocidades iguales, no se acercan
+    # Verificar si se están acercando
+    # La separación angular decrece si sgn(θ_rel) == sgn(θ_dot_rel) y θ_dot_rel < 0
+    # O simplemente: la distancia está decreciendo si d(Δθ)/dt < 0
+    #
+    # Para simplificar: si ambas velocidades tienen el mismo signo Y se mueven
+    # en direcciones que aumentan la separación, no colisionan
+
+    # Velocidad relativa en términos de la separación
+    # Si θ2 > θ1 y θ_dot2 - θ_dot1 > 0, se alejan
+    # Si θ2 < θ1 y θ_dot2 - θ_dot1 < 0, se alejan
+    Δθ_signed = θ2 - θ1
+
+    # Si la velocidad relativa apunta en dirección de incrementar Δθ (alejarse)
+    if Δθ_signed * θ_dot_rel > zero(T)
+        # Se están alejando
+        return T(Inf)
+    end
+
+    # Si las velocidades son idénticas, mantienen separación constante
+    if abs(θ_dot_rel) < eps(T) * max(abs(θ_dot1), abs(θ_dot2))
         return T(Inf)
     end
 
