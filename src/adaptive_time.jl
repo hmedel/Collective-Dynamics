@@ -61,54 +61,51 @@ Esto es válido porque dt es pequeño y la aceleración geodésica
     p2::Particle{T},
     a::T,
     b::T;
-    max_time::T = T(Inf),
-    min_separation_check::T = T(1.1)  # Factor multiplicativo sobre radios
+    max_time::T = T(Inf)
 ) where {T <: AbstractFloat}
 
-    # Si ya están colisionando O muy cerca, retornar tiempo pequeño pero no cero
-    # Esto evita detección inmediata después de colisión
-    r_sum = p1.radius + p2.radius
-
+    # Calcular separación actual
     θ1, θ2 = p1.θ, p2.θ
     Δθ = abs(θ2 - θ1)
     Δθ = min(Δθ, 2*T(π) - Δθ)
+
+    if Δθ < eps(T)
+        # Misma posición, retornar Inf para evitar dt → 0
+        return T(Inf)
+    end
+
     θ_mid = (θ1 + θ2) / 2
     g_mid = sqrt(metric_ellipse(θ_mid, a, b))
     current_distance = g_mid * Δθ
 
-    # Si están muy cerca (dentro de min_separation_check * suma de radios),
-    # retornar un tiempo pequeño para permitir que se separen
-    if current_distance < min_separation_check * r_sum
-        return T(1e-9)  # Tiempo pequeño para dar chance de separación
-    end
+    r_sum = p1.radius + p2.radius
 
-    # Obtener velocidades
-    θ_dot1, θ_dot2 = p1.θ_dot, p2.θ_dot
+    # Si ya están en contacto o muy cerca, verificar si se están separando
+    if current_distance <= 1.2 * r_sum  # 20% de margen
+        # Obtener velocidades
+        θ_dot1, θ_dot2 = p1.θ_dot, p2.θ_dot
 
-    # Velocidad relativa
-    θ_dot_rel = θ_dot2 - θ_dot1
+        # Velocidad relativa
+        θ_dot_rel = θ_dot2 - θ_dot1
 
-    # Verificar si se están acercando
-    # La separación angular decrece si sgn(θ_rel) == sgn(θ_dot_rel) y θ_dot_rel < 0
-    # O simplemente: la distancia está decreciendo si d(Δθ)/dt < 0
-    #
-    # Para simplificar: si ambas velocidades tienen el mismo signo Y se mueven
-    # en direcciones que aumentan la separación, no colisionan
+        # Diferencia angular SIGNED con wraparound correcto
+        # Normalizar a [-π, π] para obtener el camino más corto
+        Δθ_raw = θ2 - θ1
+        Δθ_signed = mod(Δθ_raw + T(π), T(2π)) - T(π)
 
-    # Velocidad relativa en términos de la separación
-    # Si θ2 > θ1 y θ_dot2 - θ_dot1 > 0, se alejan
-    # Si θ2 < θ1 y θ_dot2 - θ_dot1 < 0, se alejan
-    Δθ_signed = θ2 - θ1
-
-    # Si la velocidad relativa apunta en dirección de incrementar Δθ (alejarse)
-    if Δθ_signed * θ_dot_rel > zero(T)
-        # Se están alejando
-        return T(Inf)
-    end
-
-    # Si las velocidades son idénticas, mantienen separación constante
-    if abs(θ_dot_rel) < eps(T) * max(abs(θ_dot1), abs(θ_dot2))
-        return T(Inf)
+        # Si Δθ_signed > 0: θ2 está adelante (sentido positivo)
+        # Si θ_dot_rel > 0: θ2 se mueve más rápido → se alejan
+        if Δθ_signed * θ_dot_rel > zero(T)
+            # Se están alejando
+            return T(Inf)
+        else
+            # Se están acercando o velocidades paralelas
+            # Si ya están en contacto, retornar Inf para permitir que el
+            # intercambio de velocidades las separe
+            if current_distance <= r_sum
+                return T(Inf)
+            end
+        end
     end
 
     # Estimación inicial: tiempo cuando θ_rel → 0 (si se mueven en círculo)
@@ -117,8 +114,9 @@ Esto es válido porque dt es pequeño y la aceleración geodésica
     # Función objetivo: distancia geodésica - suma de radios
     function separation_at_time(t::T)
         # Posiciones aproximadas (velocidades constantes)
-        θ1_t = θ1 + θ_dot1 * t
-        θ2_t = θ2 + θ_dot2 * t
+        # Normalizar ángulos a [0, 2π] para evitar overflow numérico
+        θ1_t = mod(θ1 + θ_dot1 * t, T(2π))
+        θ2_t = mod(θ2 + θ_dot2 * t, T(2π))
 
         # Diferencia angular (tomando camino más corto)
         Δθ = abs(θ2_t - θ1_t)
