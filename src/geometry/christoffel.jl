@@ -51,7 +51,7 @@ g_θθ = a² sin²(θ) + b² cos²(θ)
 El símbolo de Christoffel puede ser positivo o negativo dependiendo del cuadrante.
 Esto es correcto geométricamente y representa la curvatura local.
 """
-@inline function christoffel_ellipse(θ::T1, a::T2, b::T3) where {T1<:Real, T2<:Real, T3<:Real}
+@inline function christoffel_ellipse(θ::Real, a::Real, b::Real)
     s, c = sincos(θ)
 
     # Numerador: (a² - b²) sin(θ)cos(θ)
@@ -73,7 +73,7 @@ end
 
 Versión alternativa usando la derivada de la métrica desde metrics.jl.
 """
-@inline function christoffel_ellipse_alt(θ::T1, a::T2, b::T3) where {T1<:Real, T2<:Real, T3<:Real}
+@inline function christoffel_ellipse_alt(θ::Real, a::Real, b::Real)
     g = metric_ellipse(θ, a, b)
     ∂g = metric_derivative_ellipse(θ, a, b)
 
@@ -244,7 +244,7 @@ Compara los tres métodos de cálculo de Christoffel:
 # Retorna
 - NamedTuple con (analytic, numerical, autodiff, max_diff)
 """
-function compare_christoffel_methods(θ::T1, a::T2, b::T3) where {T1<:Real, T2<:Real, T3<:Real}
+function compare_christoffel_methods(θ::Real, a::Real, b::Real)
     # Analítico
     Γ_analytic = christoffel_ellipse(θ, a, b)
 
@@ -277,12 +277,12 @@ end
 
 # Incluir localmente si metrics.jl no está cargado
 if !@isdefined(metric_ellipse)
-    @inline function metric_ellipse(θ::T1, a::T2, b::T3) where {T1<:Real, T2<:Real, T3<:Real}
+    @inline function metric_ellipse(θ::Real, a::Real, b::Real)
         s, c = sincos(θ)
         return a^2 * s^2 + b^2 * c^2
     end
 
-    @inline function metric_derivative_ellipse(θ::T1, a::T2, b::T3) where {T1<:Real, T2<:Real, T3<:Real}
+    @inline function metric_derivative_ellipse(θ::Real, a::Real, b::Real)
         return (a^2 - b^2) * sin(2 * θ)
     end
 end
