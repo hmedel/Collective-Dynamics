@@ -64,6 +64,9 @@ include("integrators/forest_ruth.jl")
 include("particles.jl")
 include("collisions.jl")
 
+# Tiempos adaptativos
+include("adaptive_time.jl")
+
 # Conservación
 include("conservation.jl")
 
@@ -137,6 +140,13 @@ export check_collision,
        resolve_collision_geodesic,
        detect_all_collisions,
        resolve_all_collisions!
+
+# ============================================================================
+# Exports - Tiempos Adaptativos
+# ============================================================================
+
+export time_to_collision,
+       find_next_collision
 
 # ============================================================================
 # Exports - Conservación
@@ -326,6 +336,230 @@ function simulate_ellipse(
 end
 
 export simulate_ellipse
+
+"""
+    simulate_ellipse_adaptive(particles_initial, a, b;
+                              max_time=1.0,
+                              dt_max=1e-5,
+                              dt_min=1e-10,
+                              save_interval=0.01,
+                              collision_method=:parallel_transport,
+                              tolerance=1e-6,
+                              verbose=true)
+
+Simula dinámica de partículas en una elipse usando **tiempos adaptativos**.
+
+Este es el algoritmo descrito en el artículo:
+1. En cada paso, calcular el tiempo hasta la próxima colisión
+2. Ajustar dt a ese tiempo (limitado por dt_max y dt_min)
+3. Evolucionar todas las partículas ese tiempo
+4. Resolver colisiones que ocurran
+5. Repetir hasta alcanzar max_time
+
+# Diferencia con simulate_ellipse
+- `simulate_ellipse`: usa dt fijo, puede perder colisiones o tener múltiples simultáneas
+- `simulate_ellipse_adaptive`: ajusta dt para detectar colisiones exactas
+
+# Parámetros
+- `particles_initial`: Estado inicial de las partículas
+- `a`, `b`: Semi-ejes de la elipse
+- `max_time`: Tiempo total de simulación
+- `dt_max`: Paso de tiempo máximo permitido
+- `dt_min`: Paso de tiempo mínimo (evita partículas "pegadas")
+- `save_interval`: Intervalo de tiempo para guardar estados
+- `collision_method`: `:simple`, `:parallel_transport`, o `:geodesic`
+- `tolerance`: Tolerancia para verificar conservación
+- `verbose`: Imprimir progreso
+
+# Retorna
+- `SimulationData`: Estructura con todos los resultados
+
+# Ejemplo
+```julia
+particles = generate_random_particles(40, 1.0, 0.05, 2.0, 1.0)
+data = simulate_ellipse_adaptive(particles, 2.0, 1.0;
+                                 max_time=1.0, dt_max=1e-5, verbose=true)
+```
+
+# Ventajas
+- Detección exacta de colisiones
+- Mejor conservación de energía
+- Evita colisiones múltiples simultáneas
+- Manejo automático de partículas "pegadas"
+
+# Notas
+- Más lento que `simulate_ellipse` debido al cálculo de tiempos
+- Ideal para sistemas con pocas partículas o alta precisión requerida
+- El vector de tiempos es irregular (no uniforme)
+"""
+function simulate_ellipse_adaptive(
+    particles_initial::Vector{Particle{T}},
+    a::T,
+    b::T;
+    max_time::T = T(1.0),
+    dt_max::T = T(1e-5),
+    dt_min::T = T(1e-10),
+    save_interval::T = T(0.01),
+    collision_method::Symbol = :parallel_transport,
+    tolerance::T = T(1e-6),
+    verbose::Bool = true
+) where {T <: AbstractFloat}
+
+    # Copiar partículas para no modificar el input
+    particles = copy(particles_initial)
+
+    # Inicializar estructuras de datos
+    particles_history = Vector{Vector{Particle{T}}}()
+    times_saved = Vector{T}()
+    n_collisions_vec = Vector{Int}()
+    conserved_fractions_vec = Vector{T}()
+    dt_history = Vector{T}()  # Historial de pasos de tiempo usados
+
+    conservation_data = ConservationData{T}()
+
+    # Guardar estado inicial
+    push!(particles_history, copy(particles))
+    push!(times_saved, zero(T))
+    record_conservation!(conservation_data, particles, zero(T), a, b)
+
+    t = zero(T)
+    t_next_save = save_interval
+    step = 0
+
+    if verbose
+        println("=" ^ 70)
+        println("SIMULACIÓN CON TIEMPOS ADAPTATIVOS")
+        println("=" ^ 70)
+        println("Partículas:        ", length(particles))
+        println("Tiempo total:      ", max_time)
+        println("dt_max:            ", dt_max)
+        println("dt_min:            ", dt_min)
+        println("Método colisión:   ", collision_method)
+        println("Semi-ejes (a, b):  ($a, $b)")
+        println("=" ^ 70)
+    end
+
+    # Loop principal de simulación
+    while t < max_time
+        step += 1
+
+        # Paso 1: Encontrar próxima colisión
+        collision_info = find_next_collision(
+            particles, a, b;
+            max_time = dt_max,
+            min_dt = dt_min
+        )
+
+        # Paso de tiempo: mínimo entre próxima colisión y dt_max
+        dt = min(collision_info.dt, max_time - t)
+
+        # Guardar dt usado
+        push!(dt_history, dt)
+
+        # Paso 2: Mover partículas
+        for i in 1:length(particles)
+            p = particles[i]
+            θ_new, θ_dot_new = forest_ruth_step_ellipse(p.θ, p.θ_dot, dt, a, b)
+            particles[i] = update_particle(p, θ_new, θ_dot_new, a, b)
+        end
+
+        t += dt
+
+        # Paso 3: Resolver colisiones si hay
+        n_coll = 0
+        conserved_frac = one(T)
+
+        if collision_info.found && collision_info.dt <= dt + eps(T)
+            # Hay colisión, resolverla
+            i, j = collision_info.pair
+            p1 = particles[i]
+            p2 = particles[j]
+
+            if collision_method == :simple
+                p1_new, p2_new = resolve_collision_simple(p1, p2, a, b)
+                conserved = true
+
+            elseif collision_method == :parallel_transport
+                p1_new, p2_new, conserved = resolve_collision_parallel_transport(
+                    p1, p2, a, b; tolerance=tolerance
+                )
+
+            elseif collision_method == :geodesic
+                p1_new, p2_new, conserved = resolve_collision_geodesic(
+                    p1, p2, dt, a, b; tolerance=tolerance
+                )
+            else
+                error("Método desconocido: $collision_method")
+            end
+
+            particles[i] = p1_new
+            particles[j] = p2_new
+            n_coll = 1
+            conserved_frac = conserved ? one(T) : zero(T)
+        end
+
+        push!(n_collisions_vec, n_coll)
+        push!(conserved_fractions_vec, conserved_frac)
+
+        # Paso 4: Guardar datos si es tiempo
+        if t >= t_next_save || abs(t - max_time) < eps(T)
+            push!(particles_history, copy(particles))
+            push!(times_saved, t)
+            record_conservation!(conservation_data, particles, t, a, b)
+            t_next_save += save_interval
+
+            if verbose && (length(times_saved) % 10 == 0)
+                progress = 100 * t / max_time
+                avg_dt = mean(dt_history[max(1, end-99):end])
+                println(@sprintf("Progreso: %.1f%% | t = %.6f | dt_avg = %.2e | Colisiones totales: %d",
+                        progress, t, avg_dt, sum(n_collisions_vec)))
+            end
+        end
+
+        # Seguridad: evitar loops infinitos
+        if step > 1_000_000
+            @warn "Alcanzado límite de pasos (1M). Deteniendo simulación."
+            break
+        end
+    end
+
+    if verbose
+        println("=" ^ 70)
+        println("SIMULACIÓN COMPLETADA")
+        println("=" ^ 70)
+        println("Pasos totales:       ", step)
+        println("Colisiones totales:  ", sum(n_collisions_vec))
+        println("dt promedio:         ", mean(dt_history))
+        println("dt mínimo:           ", minimum(dt_history))
+        println("dt máximo:           ", maximum(dt_history))
+        println("=" ^ 70)
+    end
+
+    # Crear diccionario de parámetros
+    params = Dict{Symbol, Any}(
+        :max_time => max_time,
+        :dt_max => dt_max,
+        :dt_min => dt_min,
+        :a => a,
+        :b => b,
+        :collision_method => collision_method,
+        :tolerance => tolerance,
+        :n_particles => length(particles_initial),
+        :adaptive => true,
+        :dt_history => dt_history
+    )
+
+    return SimulationData{T}(
+        particles_history,
+        conservation_data,
+        times_saved,
+        n_collisions_vec,
+        conserved_fractions_vec,
+        params
+    )
+end
+
+export simulate_ellipse_adaptive
 
 # ============================================================================
 # Versión Info
