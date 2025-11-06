@@ -32,8 +32,11 @@ energies = Float64[]
 push!(energies, E0)
 
 # Simular sin colisiones
-θ, θ_dot = p.θ, p.θ_dot
+θ = p.θ
+θ_dot = p.θ_dot
+
 for step in 1:n_steps
+    global θ, θ_dot
     θ, θ_dot = forest_ruth_step_ellipse(θ, θ_dot, dt, a, b)
 
     if step % 1000 == 0
