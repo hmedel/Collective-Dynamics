@@ -276,7 +276,7 @@ function save_particles_csv(
         for p in particles
             @printf(io, "%d,%.10f,%.10f,%.10f,%.10f,%.10f,%.10f,%.10f,%.10f\n",
                     p.id, p.mass, p.radius, p.θ, p.θ_dot,
-                    p.x, p.y, p.vx, p.vy)
+                    p.pos[1], p.pos[2], p.vel[1], p.vel[2])
         end
     end
 end
@@ -314,7 +314,7 @@ function save_trajectories_csv(
                 E_particle = kinetic_energy_angular(p.θ_dot, p.θ, a, b, p.mass)
 
                 @printf(io, "%.10f,%d,%.10f,%.10f,%.10f,%.10f,%.10f,%.10f,%.10e\n",
-                        t, p.id, p.θ, p.θ_dot, p.x, p.y, p.vx, p.vy, E_particle)
+                        t, p.id, p.θ, p.θ_dot, p.pos[1], p.pos[2], p.vel[1], p.vel[2], E_particle)
             end
         end
     end
