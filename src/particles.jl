@@ -278,7 +278,7 @@ function generate_random_particles(
     radius_fraction::T,
     a::T,
     b::T;
-    θ_dot_range::Tuple{T,T} = (T(-1e5), T(1e5)),
+    θ_dot_range::Tuple{T,T} = (T(-1.0), T(1.0)),
     max_attempts::Int = 10000,
     rng::AbstractRNG = Random.GLOBAL_RNG
 ) where {T <: AbstractFloat}
