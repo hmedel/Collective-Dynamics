@@ -78,10 +78,10 @@ save_jld2 = true      # Guardar en JLD2 (formato Julia binario)
 save_summary = true   # Guardar resumen en texto
 
 # Qué datos guardar
-save_trajectories = true        # Trayectorias completas
-save_conservation = true        # Datos de conservación
+save_trajectories = true        # Trayectorias completas (incluye energía individual)
+save_conservation = true        # Datos de conservación (energía y momento totales)
 save_initial_final = true       # Solo estados inicial y final
-save_collision_events = true    # Lista de eventos de colisión
+save_collision_events = true    # Información de colisiones por paso de tiempo
 
 # Incluir copia de esta configuración en resultados
 copy_config = true

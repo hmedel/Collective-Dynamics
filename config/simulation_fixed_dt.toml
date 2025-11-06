@@ -37,7 +37,7 @@ save_summary = true
 save_trajectories = false        # NO guardar trayectorias completas
 save_conservation = true         # Guardar datos de conservación
 save_initial_final = true        # Solo estados inicial y final
-save_collision_events = false
+save_collision_events = true     # Guardar info de colisiones por paso
 
 copy_config = true
 

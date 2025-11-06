@@ -154,8 +154,8 @@ function run_simulation_from_config(config_file::String)
     # 6. Crear directorio de salida
     output_dir = create_output_directory(config)
 
-    # 7. Guardar resultados
-    save_simulation_results(data, config, config_file, output_dir)
+    # 7. Guardar resultados (con a, b para calcular energías individuales)
+    save_simulation_results(data, config, config_file, output_dir, a, b)
 
     println()
     println("="^70)

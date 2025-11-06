@@ -282,25 +282,39 @@ function save_particles_csv(
 end
 
 """
-    save_trajectories_csv(data::SimulationData{T}, filename::String)
+    save_trajectories_csv(data::SimulationData{T}, filename::String, a::T, b::T)
 
-Guarda trayectorias completas en CSV.
+Guarda trayectorias completas en CSV con energía individual por partícula.
+
+# Columnas
+- time: Tiempo de la simulación
+- particle_id: ID de la partícula
+- theta: Posición angular (radianes)
+- theta_dot: Velocidad angular (rad/s)
+- x, y: Posición cartesiana
+- vx, vy: Velocidad cartesiana
+- energy: Energía cinética individual de la partícula
 """
 function save_trajectories_csv(
     data::SimulationData{T},
-    filename::String
+    filename::String,
+    a::T,
+    b::T
 ) where {T <: AbstractFloat}
 
     open(filename, "w") do io
-        # Header
-        println(io, "time,particle_id,theta,theta_dot,x,y,vx,vy")
+        # Header con energía
+        println(io, "time,particle_id,theta,theta_dot,x,y,vx,vy,energy")
 
         # Datos
         for (idx, t) in enumerate(data.times)
             particles = data.particles[idx]
             for p in particles
-                @printf(io, "%.10f,%d,%.10f,%.10f,%.10f,%.10f,%.10f,%.10f\n",
-                        t, p.id, p.θ, p.θ_dot, p.x, p.y, p.vx, p.vy)
+                # Calcular energía individual
+                E_particle = kinetic_energy_angular(p.θ_dot, p.θ, a, b, p.mass)
+
+                @printf(io, "%.10f,%d,%.10f,%.10f,%.10f,%.10f,%.10f,%.10f,%.10e\n",
+                        t, p.id, p.θ, p.θ_dot, p.x, p.y, p.vx, p.vy, E_particle)
             end
         end
     end
@@ -324,6 +338,37 @@ function save_conservation_csv(
         for i in 1:length(cons.times)
             @printf(io, "%.10f,%.15e,%.15e\n",
                     cons.times[i], cons.energies[i], cons.momenta[i])
+        end
+    end
+end
+
+"""
+    save_collisions_per_step_csv(data::SimulationData{T}, filename::String)
+
+Guarda información de colisiones por paso de tiempo.
+
+# Columnas
+- step: Número de paso
+- time: Tiempo de simulación
+- n_collisions: Número de colisiones en ese paso
+- conserved_fraction: Fracción de colisiones que conservaron energía
+- had_collision: 1 si hubo colisiones, 0 si no
+"""
+function save_collisions_per_step_csv(
+    data::SimulationData{T},
+    filename::String
+) where {T <: AbstractFloat}
+
+    open(filename, "w") do io
+        println(io, "step,time,n_collisions,conserved_fraction,had_collision")
+
+        for i in 1:length(data.times)
+            n_coll = data.n_collisions[i]
+            cons_frac = data.conserved_fractions[i]
+            had_coll = n_coll > 0 ? 1 : 0
+
+            @printf(io, "%d,%.10f,%d,%.6f,%d\n",
+                    i, data.times[i], n_coll, cons_frac, had_coll)
         end
     end
 end
@@ -403,7 +448,9 @@ end
         data::SimulationData{T},
         config::Dict,
         config_file::String,
-        output_dir::String
+        output_dir::String,
+        a::T,
+        b::T
     )
 
 Guarda todos los resultados de simulación según configuración.
@@ -412,7 +459,9 @@ function save_simulation_results(
     data::SimulationData{T},
     config::Dict,
     config_file::String,
-    output_dir::String
+    output_dir::String,
+    a::T,
+    b::T
 ) where {T <: AbstractFloat}
 
     output_cfg = config["output"]
@@ -443,13 +492,14 @@ function save_simulation_results(
             println("✅ Partículas inicial/final guardadas (CSV)")
         end
 
-        # Trayectorias
+        # Trayectorias (ahora con energía individual)
         if output_cfg["save_trajectories"]
             save_trajectories_csv(
                 data,
-                joinpath(output_dir, "trajectories.csv")
+                joinpath(output_dir, "trajectories.csv"),
+                a, b
             )
-            println("✅ Trayectorias guardadas (CSV)")
+            println("✅ Trayectorias guardadas (CSV) - incluye energía por partícula")
         end
 
         # Conservación
@@ -459,6 +509,15 @@ function save_simulation_results(
                 joinpath(output_dir, "conservation.csv")
             )
             println("✅ Datos de conservación guardados (CSV)")
+        end
+
+        # Colisiones por paso
+        if output_cfg["save_collision_events"]
+            save_collisions_per_step_csv(
+                data,
+                joinpath(output_dir, "collisions_per_step.csv")
+            )
+            println("✅ Eventos de colisión por paso guardados (CSV)")
         end
     end
 
