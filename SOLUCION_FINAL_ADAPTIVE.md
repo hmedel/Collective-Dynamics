@@ -294,7 +294,7 @@ println("dt rango: [", minimum(dt_hist), ", ", maximum(dt_hist), "]")
 | `8b3a3a0` | ❌ Forest-Ruth para transporte (error) | Revertido |
 | `2d4480b` | ✅ Revertir a RK4 + primer fix stuck | Mejorado |
 | `ee3955c` | ✅ Retornar Inf cuando en contacto | Parcial |
-| TBD | ✅ Fix wraparound en separación + normalización | **Solución final** |
+| `5e87d2b` | ✅ Fix wraparound en separación + normalización | **Solución final** |
 
 ## ✅ Checklist de Verificación
 
@@ -309,6 +309,6 @@ Para confirmar que el sistema funciona:
 ---
 
 **Fecha:** 2025-11-06
-**Último commit:** TBD (wraparound fix)
+**Último commit:** `5e87d2b` (wraparound fix)
 **Estado:** ✅ Implementado, corregidos bugs de wraparound
 **Próximo paso:** Ejecutar `test_adaptive_improved.jl` para verificar completo
