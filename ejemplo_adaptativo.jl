@@ -76,8 +76,8 @@ println()
 # Conservación de energía
 E_analysis = analyze_energy_conservation(data.conservation)
 println("🔋 Conservación de Energía:")
-println(@sprintf("  Energía inicial:  %.10f", E_analysis.initial))
-println(@sprintf("  Energía final:    %.10f", E_analysis.final))
+println(@sprintf("  Energía inicial:  %.10f", E_analysis.E_initial))
+println(@sprintf("  Energía final:    %.10f", E_analysis.E_final))
 println(@sprintf("  Error máximo:     ΔE/E₀ = %.6e", E_analysis.max_rel_error))
 println(@sprintf("  Error promedio:   ΔE/E₀ = %.6e", E_analysis.mean_rel_error))
 

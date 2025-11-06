@@ -45,9 +45,13 @@ no tiene forma cerrada simple.
 - `v_new`: Velocidad angular transportada a θ_final
 
 # Método
-Integramos la EDO usando **Forest-Ruth** de 4to orden para consistencia
-simpléctica con el resto del sistema. Esto garantiza mejor conservación
-de cantidades a largo plazo.
+Integramos la EDO usando **Runge-Kutta 4** (RK4) de 4to orden.
+
+**Nota sobre Forest-Ruth:**
+Forest-Ruth es ideal para sistemas Hamiltonianos separables (H = T + V),
+como las ecuaciones geodésicas. Sin embargo, la EDO de transporte paralelo
+dv/dθ = -Γ(θ) v(θ) NO es un sistema Hamiltoniano separable, por lo que
+RK4 es más apropiado aquí. Forest-Ruth se usa para las geodésicas.
 """
 @inline function parallel_transport_velocity(
     v_old::T, θ_initial::T, θ_final::T, a::T, b::T
@@ -65,43 +69,32 @@ de cantidades a largo plazo.
         return v_old - Γ * v_old * Δθ_total
     end
 
-    # Para desplazamientos grandes, integrar la EDO usando Forest-Ruth
+    # Para desplazamientos grandes, integrar la EDO usando RK4
     # dv/dθ = -Γ(θ) v(θ)
 
     # Número de pasos adaptativos
     n_steps = max(10, Int(ceil(abs(Δθ_total) / T(0.1))))
     dθ = Δθ_total / n_steps
 
-    # Coeficientes de Forest-Ruth
-    cbrt2 = T(2)^(one(T)/3)
-    denominator = 2 * (2 - cbrt2)
-    γ₁ = one(T) / denominator
-    γ₂ = (one(T) - cbrt2) / denominator
-
     θ = θ_initial
     v = v_old
 
     for _ in 1:n_steps
-        # Forest-Ruth de 4 etapas para dv/dθ = -Γ(θ) v
-        # Etapa 1
-        Γ = christoffel_ellipse(θ, a, b)
-        v = v - γ₁ * dθ * Γ * v
-        θ = θ + γ₁ * dθ
+        # RK4 para dv/dθ = -Γ(θ) v
+        Γ1 = christoffel_ellipse(θ, a, b)
+        k1 = -Γ1 * v
 
-        # Etapa 2
-        Γ = christoffel_ellipse(θ, a, b)
-        v = v - γ₂ * dθ * Γ * v
-        θ = θ + γ₂ * dθ
+        Γ2 = christoffel_ellipse(θ + dθ/2, a, b)
+        k2 = -Γ2 * (v + k1 * dθ/2)
 
-        # Etapa 3
-        Γ = christoffel_ellipse(θ, a, b)
-        v = v - γ₂ * dθ * Γ * v
-        θ = θ + γ₂ * dθ
+        Γ3 = christoffel_ellipse(θ + dθ/2, a, b)
+        k3 = -Γ3 * (v + k2 * dθ/2)
 
-        # Etapa 4
-        Γ = christoffel_ellipse(θ, a, b)
-        v = v - γ₁ * dθ * Γ * v
-        θ = θ + γ₁ * dθ
+        Γ4 = christoffel_ellipse(θ + dθ, a, b)
+        k4 = -Γ4 * (v + k3 * dθ)
+
+        v = v + (k1 + 2*k2 + 2*k3 + k4) * dθ / 6
+        θ = θ + dθ
     end
 
     return v
