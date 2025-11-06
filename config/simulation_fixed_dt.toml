@@ -1,0 +1,52 @@
+# ============================================================================
+# Configuración de Ejemplo: Simulación con dt Fijo
+# ============================================================================
+# Esta configuración usa:
+#   - Método de dt fijo (más rápido para muchas partículas)
+#   - Partículas desde archivo CSV
+#   - Salida mínima (solo inicial, final, y resumen)
+
+[geometry]
+a = 2.0
+b = 1.0
+
+[simulation]
+method = "fixed"           # Método de dt fijo
+max_time = 1.0
+save_interval = 0.1        # Guardar cada 0.1 (menos frames)
+dt_fixed = 1.0e-5          # Paso de tiempo fijo
+collision_method = "parallel_transport"
+tolerance = 1.0e-6
+verbose = true
+
+[particles.random]
+enabled = false            # No usar generación aleatoria
+
+[particles.from_file]
+enabled = true             # Leer desde archivo
+filename = "config/particles_custom.csv"
+
+[output]
+base_dir = "results"
+use_timestamp = true
+save_csv = true
+save_jld2 = false
+save_summary = true
+
+# Guardar solo lo esencial para ahorrar espacio
+save_trajectories = false        # NO guardar trayectorias completas
+save_conservation = true         # Guardar datos de conservación
+save_initial_final = true        # Solo estados inicial y final
+save_collision_events = true     # Guardar info de colisiones por paso
+
+copy_config = true
+
+[analysis]
+compute_energy_stats = true
+compute_collision_stats = true
+compute_phase_space = false
+generate_plots = false
+
+[resources]
+n_threads = 1
+use_gpu = false
