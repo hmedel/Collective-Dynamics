@@ -111,14 +111,13 @@ Resuelve colisión elástica usando transporte paralelo.
 
 # Matemática
 ```
-Δθ₁₂ = θ₂ - θ₁  (desplazamiento de 1 hacia 2)
-Δθ₂₁ = θ₁ - θ₂  (desplazamiento de 2 hacia 1)
-
 # Transportar θ̇₁ desde θ₁ hacia θ₂
-θ̇₁_at_θ₂ = θ̇₁ - Γ(θ₁) * θ̇₁ * Δθ₁₂
+# Resuelve la EDO: dv/dθ = -Γ(θ) v(θ) usando RK4
+θ̇₁_at_θ₂ = parallel_transport_velocity(θ̇₁, θ₁, θ₂, a, b)
 
 # Transportar θ̇₂ desde θ₂ hacia θ₁
-θ̇₂_at_θ₁ = θ̇₂ - Γ(θ₂) * θ̇₂ * Δθ₂₁
+# Resuelve la EDO: dv/dθ = -Γ(θ) v(θ) usando RK4
+θ̇₂_at_θ₁ = parallel_transport_velocity(θ̇₂, θ₂, θ₁, a, b)
 
 # Intercambio simple
 θ̇₁_new = θ̇₂_at_θ₁  (partícula 1 recibe lo que 2 tenía, transportado a θ₁)
@@ -141,21 +140,15 @@ function resolve_collision_simple(
     θ_dot_1 = p1.θ_dot
     θ_dot_2 = p2.θ_dot
 
-    # Desplazamientos
-    Δθ_12 = θ2 - θ1  # De 1 hacia 2
-    Δθ_21 = θ1 - θ2  # De 2 hacia 1
-
-    # Símbolos de Christoffel en cada posición
-    Γ1 = christoffel_ellipse(θ1, a, b)
-    Γ2 = christoffel_ellipse(θ2, a, b)
-
-    # Paso 1: Transportar θ̇₁ desde θ₁ hacia θ₂
+    # Paso 1: Transportar θ̇₁ desde θ₁ hacia θ₂ usando RK4
     # ¿Qué velocidad tendría p1 si estuviera en la posición de p2?
-    θ_dot_1_at_θ2 = θ_dot_1 - Γ1 * θ_dot_1 * Δθ_12
+    # Resuelve la EDO: dv/dθ = -Γ(θ) v(θ) de θ₁ a θ₂
+    θ_dot_1_at_θ2 = parallel_transport_velocity(θ_dot_1, θ1, θ2, a, b)
 
-    # Paso 2: Transportar θ̇₂ desde θ₂ hacia θ₁
+    # Paso 2: Transportar θ̇₂ desde θ₂ hacia θ₁ usando RK4
     # ¿Qué velocidad tendría p2 si estuviera en la posición de p1?
-    θ_dot_2_at_θ1 = θ_dot_2 - Γ2 * θ_dot_2 * Δθ_21
+    # Resuelve la EDO: dv/dθ = -Γ(θ) v(θ) de θ₂ a θ₁
+    θ_dot_2_at_θ1 = parallel_transport_velocity(θ_dot_2, θ2, θ1, a, b)
 
     # Paso 3: Intercambio simple de velocidades transportadas
     # p1 recibe la velocidad que p2 tenía (transportada a θ₁)
@@ -187,15 +180,14 @@ Resuelve colisión usando transporte paralelo (método del artículo).
 # Matemática
 Para colisiones elásticas con masas iguales:
 ```
-θ̇₁' = θ̇₂  (antes del transporte)
-θ̇₂' = θ̇₁  (antes del transporte)
+# Transportar velocidades usando RK4 (resuelve dv/dθ = -Γ(θ) v(θ))
+θ̇₁_at_θ₂ = parallel_transport_velocity(θ̇₁, θ₁, θ₂, a, b)
+θ̇₂_at_θ₁ = parallel_transport_velocity(θ̇₂, θ₂, θ₁, a, b)
 
-Luego aplicar:
-θ̇₁'' = θ̇₁' - Γ(θ₁) θ̇₁' Δθ
-θ̇₂'' = θ̇₂' - Γ(θ₂) θ̇₂' Δθ
+# Intercambio
+θ̇₁_new = θ̇₂_at_θ₁
+θ̇₂_new = θ̇₁_at_θ₂
 ```
-
-donde Δθ es el desplazamiento durante la colisión.
 
 # Retorna
 - `(p1_new, p2_new, conserved)`: Partículas actualizadas y flag de conservación
@@ -222,17 +214,10 @@ function resolve_collision_parallel_transport(
     θ_dot_1 = p1.θ_dot
     θ_dot_2 = p2.θ_dot
 
-    # Desplazamientos
-    Δθ_12 = θ2 - θ1
-    Δθ_21 = θ1 - θ2
-
-    # Símbolos de Christoffel
-    Γ1 = christoffel_ellipse(θ1, a, b)
-    Γ2 = christoffel_ellipse(θ2, a, b)
-
-    # Transportar velocidades a las posiciones de la otra partícula
-    θ_dot_1_at_θ2 = θ_dot_1 - Γ1 * θ_dot_1 * Δθ_12
-    θ_dot_2_at_θ1 = θ_dot_2 - Γ2 * θ_dot_2 * Δθ_21
+    # Transportar velocidades a las posiciones de la otra partícula usando RK4
+    # Resuelve la EDO: dv/dθ = -Γ(θ) v(θ)
+    θ_dot_1_at_θ2 = parallel_transport_velocity(θ_dot_1, θ1, θ2, a, b)
+    θ_dot_2_at_θ1 = parallel_transport_velocity(θ_dot_2, θ2, θ1, a, b)
 
     # Intercambio de velocidades transportadas
     θ_dot_1_new = θ_dot_2_at_θ1
@@ -305,13 +290,18 @@ function resolve_collision_geodesic(
         θ_dot_2_new = ((m2 - m1) * p2.θ_dot + 2*m1 * p1.θ_dot) / M
     end
 
-    # Aplicar transporte paralelo
+    # Aplicar transporte paralelo usando RK4
     # Desplazamiento durante colisión ≈ dt * velocidad promedio
     Δθ_1 = dt * (p1.θ_dot + θ_dot_1_new) / 2
     Δθ_2 = dt * (p2.θ_dot + θ_dot_2_new) / 2
 
-    θ_dot_1_transported = parallel_transport_velocity(θ_dot_1_new, Δθ_1, p1.θ, a, b)
-    θ_dot_2_transported = parallel_transport_velocity(θ_dot_2_new, Δθ_2, p2.θ, a, b)
+    # Posiciones finales aproximadas
+    θ1_collision = p1.θ + Δθ_1
+    θ2_collision = p2.θ + Δθ_2
+
+    # Transportar velocidades usando RK4
+    θ_dot_1_transported = parallel_transport_velocity(θ_dot_1_new, p1.θ, θ1_collision, a, b)
+    θ_dot_2_transported = parallel_transport_velocity(θ_dot_2_new, p2.θ, θ2_collision, a, b)
 
     # Integrar geodésicas un paso
     θ1_new, θ_dot_1_final = forest_ruth_step_ellipse(p1.θ, θ_dot_1_transported, dt, a, b)
@@ -452,9 +442,16 @@ if !@isdefined(metric_ellipse)
 end
 
 if !@isdefined(parallel_transport_velocity)
-    @inline function parallel_transport_velocity(v::T, Δθ::T, θ::T, a::T, b::T) where {T <: AbstractFloat}
-        Γ = christoffel_ellipse(θ, a, b)
-        return v - Γ * v * Δθ
+    @inline function parallel_transport_velocity(
+        v_old::T, θ_initial::T, θ_final::T, a::T, b::T
+    ) where {T <: AbstractFloat}
+        # Fallback: linear approximation (not recommended, use RK4 version)
+        Δθ = θ_final - θ_initial
+        if abs(Δθ) < eps(T)
+            return v_old
+        end
+        Γ = christoffel_ellipse(θ_initial, a, b)
+        return v_old - Γ * v_old * Δθ
     end
 end
 

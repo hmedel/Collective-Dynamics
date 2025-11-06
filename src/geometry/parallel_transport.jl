@@ -18,54 +18,101 @@ using LinearAlgebra
 # ============================================================================
 
 """
-    parallel_transport_velocity(v_old, Δθ, θ, a, b)
+    parallel_transport_velocity(v_old, θ_initial, θ_final, a, b)
 
 Transporta paralelo una velocidad angular a lo largo de la elipse.
 
-# Matemática (del Artículo - Ecuación fundamental)
+**Solución EXACTA** de la ecuación de transporte paralelo:
 ```
-v'^i = v^i - Γ^i_{jk} v^j Δq^k
-```
-
-Para coordenadas angulares (1D):
-```
-θ̇' = θ̇ - Γ^θ_θθ θ̇ Δθ
+dv/dθ = -Γ(θ) v(θ)
 ```
 
-Esto asegura que el vector velocidad permanezca tangente a la variedad
-después de moverse a lo largo de una geodésica.
+La solución es:
+```
+v(θ_final) = v(θ_initial) exp(-∫[θ_initial → θ_final] Γ(s) ds)
+```
+
+Para la elipse, debemos integrar numéricamente ya que la integral de Γ(θ)
+no tiene forma cerrada simple.
 
 # Parámetros
-- `v_old`: Velocidad angular antes del transporte (θ̇)
-- `Δθ`: Desplazamiento angular a lo largo de la geodésica
-- `θ`: Posición angular actual (donde se evalúa Γ)
+- `v_old`: Velocidad angular en θ_initial
+- `θ_initial`: Posición inicial
+- `θ_final`: Posición final
 - `a`, `b`: Semi-ejes de la elipse
 
 # Retorna
-- `v_new`: Velocidad angular transportada θ̇'
+- `v_new`: Velocidad angular transportada a θ_final
 
-# Nota Física
-El transporte paralelo NO conserva la magnitud del vector en espacios curvos.
-Sin embargo, en la elipse parametrizada angularmente, la corrección
-es proporcional a la curvatura local.
-
-# Ejemplo
-```julia
-θ = π/4
-θ_dot_old = 1.0
-Δθ = 0.01
-θ_dot_new = parallel_transport_velocity(θ_dot_old, Δθ, θ, 2.0, 1.0)
-```
+# Método
+Integramos la EDO usando Runge-Kutta 4 (RK4) para precisión.
 """
 @inline function parallel_transport_velocity(
+    v_old::T, θ_initial::T, θ_final::T, a::T, b::T
+) where {T <: Real}
+
+    # Si no hay desplazamiento, no hay cambio
+    Δθ_total = θ_final - θ_initial
+    if abs(Δθ_total) < eps(T)
+        return v_old
+    end
+
+    # Para desplazamientos muy pequeños, usar aproximación lineal
+    if abs(Δθ_total) < T(1e-6)
+        Γ = christoffel_ellipse(θ_initial, a, b)
+        return v_old - Γ * v_old * Δθ_total
+    end
+
+    # Para desplazamientos grandes, integrar la EDO usando RK4
+    # dv/dθ = -Γ(θ) v(θ)
+
+    # Número de pasos adaptativos
+    n_steps = max(10, Int(ceil(abs(Δθ_total) / T(0.1))))
+    dθ = Δθ_total / n_steps
+
+    θ = θ_initial
+    v = v_old
+
+    for _ in 1:n_steps
+        # RK4 para dv/dθ = -Γ(θ) v
+        Γ1 = christoffel_ellipse(θ, a, b)
+        k1 = -Γ1 * v
+
+        Γ2 = christoffel_ellipse(θ + dθ/2, a, b)
+        k2 = -Γ2 * (v + k1 * dθ/2)
+
+        Γ3 = christoffel_ellipse(θ + dθ/2, a, b)
+        k3 = -Γ3 * (v + k2 * dθ/2)
+
+        Γ4 = christoffel_ellipse(θ + dθ, a, b)
+        k4 = -Γ4 * (v + k3 * dθ)
+
+        v = v + (k1 + 2*k2 + 2*k3 + k4) * dθ / 6
+        θ = θ + dθ
+    end
+
+    return v
+end
+
+"""
+    parallel_transport_velocity_linear(v_old, Δθ, θ, a, b)
+
+Versión aproximada (primer orden) del transporte paralelo.
+Solo para Δθ muy pequeños.
+
+# Matemática
+```
+v' ≈ v - Γ v Δθ  (válido solo para |Δθ| << 1)
+```
+"""
+@inline function parallel_transport_velocity_linear(
     v_old::T, Δθ::T, θ::T, a::T, b::T
 ) where {T <: Real}
 
     # Símbolo de Christoffel en el punto θ
     Γ = christoffel_ellipse(θ, a, b)
 
-    # Ecuación de transporte paralelo
-    # v' = v - Γ v Δθ
+    # Aproximación lineal
     v_new = v_old - Γ * v_old * Δθ
 
     return v_new
