@@ -88,10 +88,13 @@ Esto es válido porque dt es pequeño y la aceleración geodésica
         # Velocidad relativa
         θ_dot_rel = θ_dot2 - θ_dot1
 
-        # Si θ2 > θ1 y θ_dot_rel > 0, se alejan
-        # Si θ2 < θ1 y θ_dot_rel < 0, se alejan
-        Δθ_signed = θ2 - θ1
+        # Diferencia angular SIGNED con wraparound correcto
+        # Normalizar a [-π, π] para obtener el camino más corto
+        Δθ_raw = θ2 - θ1
+        Δθ_signed = mod(Δθ_raw + T(π), T(2π)) - T(π)
 
+        # Si Δθ_signed > 0: θ2 está adelante (sentido positivo)
+        # Si θ_dot_rel > 0: θ2 se mueve más rápido → se alejan
         if Δθ_signed * θ_dot_rel > zero(T)
             # Se están alejando
             return T(Inf)
@@ -111,8 +114,9 @@ Esto es válido porque dt es pequeño y la aceleración geodésica
     # Función objetivo: distancia geodésica - suma de radios
     function separation_at_time(t::T)
         # Posiciones aproximadas (velocidades constantes)
-        θ1_t = θ1 + θ_dot1 * t
-        θ2_t = θ2 + θ_dot2 * t
+        # Normalizar ángulos a [0, 2π] para evitar overflow numérico
+        θ1_t = mod(θ1 + θ_dot1 * t, T(2π))
+        θ2_t = mod(θ2 + θ_dot2 * t, T(2π))
 
         # Diferencia angular (tomando camino más corto)
         Δθ = abs(θ2_t - θ1_t)
