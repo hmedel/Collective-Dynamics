@@ -79,7 +79,7 @@ println("🔋 Conservación de Energía:")
 println(@sprintf("  Energía inicial:  %.10f", E_analysis.E_initial))
 println(@sprintf("  Energía final:    %.10f", E_analysis.E_final))
 println(@sprintf("  Error máximo:     ΔE/E₀ = %.6e", E_analysis.max_rel_error))
-println(@sprintf("  Error promedio:   ΔE/E₀ = %.6e", E_analysis.mean_rel_error))
+println(@sprintf("  Drift relativo:   ΔE/E₀ = %.6e", E_analysis.rel_drift))
 
 if E_analysis.max_rel_error < 1e-6
     println("  ✅ EXCELENTE: Error < 1e-6")
