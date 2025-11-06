@@ -80,11 +80,11 @@ Esto es válido porque dt es pequeño y la aceleración geodésica
 
     r_sum = p1.radius + p2.radius
 
+    # Obtener velocidades (necesarias para el closure más adelante)
+    θ_dot1, θ_dot2 = p1.θ_dot, p2.θ_dot
+
     # Si ya están en contacto o muy cerca, verificar si se están separando
     if current_distance <= 1.2 * r_sum  # 20% de margen
-        # Obtener velocidades
-        θ_dot1, θ_dot2 = p1.θ_dot, p2.θ_dot
-
         # Velocidad relativa
         θ_dot_rel = θ_dot2 - θ_dot1
 
