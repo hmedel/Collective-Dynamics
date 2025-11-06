@@ -101,25 +101,28 @@ end
 """
     resolve_collision_simple(p1::Particle, p2::Particle, a, b)
 
-Resuelve colisión elástica conservando el Hamiltoniano curvilíneo.
+Resuelve colisión elástica usando transporte paralelo.
 
-Esta versión implementa colisiones elásticas que conservan:
-1. Energía (Hamiltoniano): H = (1/2)Σᵢ mᵢ g(θᵢ) θ̇ᵢ²
-2. Momento generalizado: Σᵢ mᵢ √g(θᵢ) θ̇ᵢ
+**Algoritmo correcto:**
+1. Las partículas están en posiciones diferentes: θ₁ ≠ θ₂
+2. Sus velocidades viven en espacios tangentes diferentes
+3. Transportamos cada velocidad a la posición de la otra partícula
+4. Hacemos intercambio simple de estas velocidades transportadas
 
 # Matemática
-Para colisión elástica 1D en variedad curva, las velocidades post-colisión son:
+```
+Δθ₁₂ = θ₂ - θ₁  (desplazamiento de 1 hacia 2)
+Δθ₂₁ = θ₁ - θ₂  (desplazamiento de 2 hacia 1)
 
-Para masas iguales (m₁ = m₂):
-```
-θ̇₁' = [(g₁ - g₂)θ̇₁ + 2g₂θ̇₂] / (g₁ + g₂)
-θ̇₂' = [2g₁θ̇₁ + (g₂ - g₁)θ̇₂] / (g₁ + g₂)
-```
+# Transportar θ̇₁ desde θ₁ hacia θ₂
+θ̇₁_at_θ₂ = θ̇₁ - Γ(θ₁) * θ̇₁ * Δθ₁₂
 
-Para masas diferentes, se resuelve el sistema:
-```
-m₁√g₁ θ̇₁' + m₂√g₂ θ̇₂' = m₁√g₁ θ̇₁ + m₂√g₂ θ̇₂
-(1/2)m₁g₁ θ̇₁'² + (1/2)m₂g₂ θ̇₂'² = (1/2)m₁g₁ θ̇₁² + (1/2)m₂g₂ θ̇₂²
+# Transportar θ̇₂ desde θ₂ hacia θ₁
+θ̇₂_at_θ₁ = θ̇₂ - Γ(θ₂) * θ̇₂ * Δθ₂₁
+
+# Intercambio simple
+θ̇₁_new = θ̇₂_at_θ₁  (partícula 1 recibe lo que 2 tenía, transportado a θ₁)
+θ̇₂_new = θ̇₁_at_θ₂  (partícula 2 recibe lo que 1 tenía, transportado a θ₂)
 ```
 
 # Retorna
@@ -132,56 +135,37 @@ function resolve_collision_simple(
     b::T
 ) where {T <: AbstractFloat}
 
-    # Calcular métricas en las posiciones de cada partícula
-    g1 = metric_ellipse(p1.θ, a, b)
-    g2 = metric_ellipse(p2.θ, a, b)
-
-    # Velocidades angulares antes de colisión
+    # Posiciones y velocidades angulares
+    θ1 = p1.θ
+    θ2 = p2.θ
     θ_dot_1 = p1.θ_dot
     θ_dot_2 = p2.θ_dot
 
-    # Masas
-    m1 = p1.mass
-    m2 = p2.mass
+    # Desplazamientos
+    Δθ_12 = θ2 - θ1  # De 1 hacia 2
+    Δθ_21 = θ1 - θ2  # De 2 hacia 1
 
-    # Fórmulas generales para colisión elástica en variedad curva
-    # Resolviendo conservación de momento y energía generalizados
+    # Símbolos de Christoffel en cada posición
+    Γ1 = christoffel_ellipse(θ1, a, b)
+    Γ2 = christoffel_ellipse(θ2, a, b)
 
-    # Caso especial: masas iguales (más común y más simple)
-    if abs(m1 - m2) < eps(T)
-        # Fórmulas simplificadas para m₁ = m₂
-        g_sum = g1 + g2
-        g_diff = g1 - g2
+    # Paso 1: Transportar θ̇₁ desde θ₁ hacia θ₂
+    # ¿Qué velocidad tendría p1 si estuviera en la posición de p2?
+    θ_dot_1_at_θ2 = θ_dot_1 - Γ1 * θ_dot_1 * Δθ_12
 
-        θ_dot_1_new = (g_diff * θ_dot_1 + 2 * g2 * θ_dot_2) / g_sum
-        θ_dot_2_new = (2 * g1 * θ_dot_1 + (g2 - g1) * θ_dot_2) / g_sum
-    else
-        # Caso general: masas diferentes
-        # Definir: α = m₁√g₁, β = m₂√g₂
-        α1 = m1 * sqrt(g1)
-        α2 = m2 * sqrt(g2)
+    # Paso 2: Transportar θ̇₂ desde θ₂ hacia θ₁
+    # ¿Qué velocidad tendría p2 si estuviera en la posición de p1?
+    θ_dot_2_at_θ1 = θ_dot_2 - Γ2 * θ_dot_2 * Δθ_21
 
-        # Velocidades generalizadas: u₁ = √g₁ θ̇₁, u₂ = √g₂ θ̇₂
-        u1 = sqrt(g1) * θ_dot_1
-        u2 = sqrt(g2) * θ_dot_2
-
-        # Colisión elástica en términos de velocidades generalizadas
-        # u₁' = [(α₁ - α₂)u₁ + 2α₂u₂] / (α₁ + α₂)
-        # u₂' = [2α₁u₁ + (α₂ - α₁)u₂] / (α₁ + α₂)
-        α_sum = α1 + α2
-        α_diff = α1 - α2
-
-        u1_new = (α_diff * u1 + 2 * α2 * u2) / α_sum
-        u2_new = (2 * α1 * u1 - α_diff * u2) / α_sum
-
-        # Convertir de vuelta a velocidades angulares: θ̇ = u / √g
-        θ_dot_1_new = u1_new / sqrt(g1)
-        θ_dot_2_new = u2_new / sqrt(g2)
-    end
+    # Paso 3: Intercambio simple de velocidades transportadas
+    # p1 recibe la velocidad que p2 tenía (transportada a θ₁)
+    # p2 recibe la velocidad que p1 tenía (transportada a θ₂)
+    θ_dot_1_new = θ_dot_2_at_θ1
+    θ_dot_2_new = θ_dot_1_at_θ2
 
     # Actualizar partículas
-    p1_new = update_particle(p1, p1.θ, θ_dot_1_new, a, b)
-    p2_new = update_particle(p2, p2.θ, θ_dot_2_new, a, b)
+    p1_new = update_particle(p1, θ1, θ_dot_1_new, a, b)
+    p2_new = update_particle(p2, θ2, θ_dot_2_new, a, b)
 
     return (p1_new, p2_new)
 end
@@ -231,49 +215,28 @@ function resolve_collision_parallel_transport(
     E_before = kinetic_energy(p1, a, b) + kinetic_energy(p2, a, b)
     p_before = angular_momentum(p1, a, b) + angular_momentum(p2, a, b)
 
-    # === Paso 1: Colisión elástica conservando Hamiltoniano curvilíneo ===
-    # Calcular métricas en las posiciones de cada partícula
-    g1 = metric_ellipse(p1.θ, a, b)
-    g2 = metric_ellipse(p2.θ, a, b)
-
-    # Velocidades angulares antes de colisión
+    # === Usar el mismo algoritmo que resolve_collision_simple ===
+    # Posiciones y velocidades angulares
+    θ1 = p1.θ
+    θ2 = p2.θ
     θ_dot_1 = p1.θ_dot
     θ_dot_2 = p2.θ_dot
 
-    # Masas
-    m1 = p1.mass
-    m2 = p2.mass
+    # Desplazamientos
+    Δθ_12 = θ2 - θ1
+    Δθ_21 = θ1 - θ2
 
-    # Colisión elástica con conservación del Hamiltoniano curvilíneo
-    if abs(m1 - m2) < eps(T)
-        # Masas iguales
-        g_sum = g1 + g2
-        g_diff = g1 - g2
-        θ_dot_1_temp = (g_diff * θ_dot_1 + 2 * g2 * θ_dot_2) / g_sum
-        θ_dot_2_temp = (2 * g1 * θ_dot_1 + (g2 - g1) * θ_dot_2) / g_sum
-    else
-        # Masas diferentes
-        α1 = m1 * sqrt(g1)
-        α2 = m2 * sqrt(g2)
-        u1 = sqrt(g1) * θ_dot_1
-        u2 = sqrt(g2) * θ_dot_2
-        α_sum = α1 + α2
-        α_diff = α1 - α2
-        u1_new = (α_diff * u1 + 2 * α2 * u2) / α_sum
-        u2_new = (2 * α1 * u1 - α_diff * u2) / α_sum
-        θ_dot_1_temp = u1_new / sqrt(g1)
-        θ_dot_2_temp = u2_new / sqrt(g2)
-    end
+    # Símbolos de Christoffel
+    Γ1 = christoffel_ellipse(θ1, a, b)
+    Γ2 = christoffel_ellipse(θ2, a, b)
 
-    # === Paso 2: Transporte paralelo (corrección geométrica) ===
-    # Para colisiones instantáneas en la misma posición, Δθ ≈ 0
-    # pero aplicamos corrección de primer orden basada en el cambio de velocidad
-    Δθ_1 = T(0)  # Colisión instantánea
-    Δθ_2 = T(0)
+    # Transportar velocidades a las posiciones de la otra partícula
+    θ_dot_1_at_θ2 = θ_dot_1 - Γ1 * θ_dot_1 * Δθ_12
+    θ_dot_2_at_θ1 = θ_dot_2 - Γ2 * θ_dot_2 * Δθ_21
 
-    # Aplicar transporte paralelo (en este caso no cambia nada con Δθ=0)
-    θ_dot_1_new = parallel_transport_velocity(θ_dot_1_temp, Δθ_1, p1.θ, a, b)
-    θ_dot_2_new = parallel_transport_velocity(θ_dot_2_temp, Δθ_2, p2.θ, a, b)
+    # Intercambio de velocidades transportadas
+    θ_dot_1_new = θ_dot_2_at_θ1
+    θ_dot_2_new = θ_dot_1_at_θ2
 
     # === Paso 3: Actualizar partículas ===
     p1_new = update_particle(p1, p1.θ, θ_dot_1_new, a, b)

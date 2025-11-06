@@ -20,9 +20,9 @@ function test_collision()
 
     # Crear DOS partículas GRANDES en posiciones CERCANAS
     # Partícula 1: en π/4
-    p1 = initialize_particle(1, 1.0, 0.3, π/4, 0.8, a, b)
+    p1 = initialize_particle(1, 1.0, 0.4, π/4, 0.8, a, b)
     # Partícula 2: muy cerca, moviéndose hacia p1
-    p2 = initialize_particle(2, 1.0, 0.3, π/4 + 0.5, -0.8, a, b)
+    p2 = initialize_particle(2, 1.0, 0.4, π/4 + 0.4, -0.8, a, b)
 
     particles = [p1, p2]
 
