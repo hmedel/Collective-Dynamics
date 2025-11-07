@@ -96,13 +96,47 @@ function analizar(dir_resultados)
 
     p_inicial = sqrt(px_inicial^2 + py_inicial^2)
     p_final = sqrt(px_final^2 + py_final^2)
-    Δp = abs(p_final - p_inicial)
+    Δp_mag = abs(p_final - p_inicial)
+
+    # Errores en componentes individuales
+    Δpx = abs(px_final - px_inicial)
+    Δpy = abs(py_final - py_inicial)
+    error_px = Δpx / max(abs(px_inicial), 1e-10)
+    error_py = Δpy / max(abs(py_inicial), 1e-10)
+    error_p_mag = Δp_mag / max(p_inicial, 1e-10)
 
     println("CONSERVACIÓN DE MOMENTO")
     println("="^70)
-    println(@sprintf("  Momento inicial:    %.10e", p_inicial))
-    println(@sprintf("  Momento final:      %.10e", p_final))
-    println(@sprintf("  Diferencia abs:     %.10e", Δp))
+    println("  Componente X:")
+    println(@sprintf("    Inicial:        %+.10e", px_inicial))
+    println(@sprintf("    Final:          %+.10e", px_final))
+    println(@sprintf("    Diferencia:     %+.10e", px_final - px_inicial))
+    println(@sprintf("    Error relativo: %.6e", error_px))
+    println()
+    println("  Componente Y:")
+    println(@sprintf("    Inicial:        %+.10e", py_inicial))
+    println(@sprintf("    Final:          %+.10e", py_final))
+    println(@sprintf("    Diferencia:     %+.10e", py_final - py_inicial))
+    println(@sprintf("    Error relativo: %.6e", error_py))
+    println()
+    println("  Magnitud del momento:")
+    println(@sprintf("    Inicial:        %.10e", p_inicial))
+    println(@sprintf("    Final:          %.10e", p_final))
+    println(@sprintf("    Diferencia:     %.10e", Δp_mag))
+    println(@sprintf("    Error relativo: %.6e", error_p_mag))
+    println()
+
+    # Diagnóstico
+    max_error_p = max(error_px, error_py)
+    if max_error_p < 1e-6
+        println("  Estado: ✅ EXCELENTE conservación de momento")
+    elseif max_error_p < 1e-4
+        println("  Estado: ✅ BUENA conservación de momento")
+    elseif max_error_p < 1e-2
+        println("  Estado: ⚠️  ACEPTABLE conservación de momento")
+    else
+        println("  Estado: ❌ POBRE conservación de momento - revisar colisiones")
+    end
     println()
 
     # ========================================================================
