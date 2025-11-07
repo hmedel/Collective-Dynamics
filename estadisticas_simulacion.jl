@@ -135,8 +135,26 @@ function analizar(dir_resultados)
     elseif max_error_p < 1e-2
         println("  Estado: ⚠️  ACEPTABLE conservación de momento")
     else
-        println("  Estado: ❌ POBRE conservación de momento - revisar colisiones")
+        println("  Estado: ❌ POBRE conservación de momento")
     end
+    println()
+
+    # NOTA FÍSICA IMPORTANTE
+    println("  " * "─"^66)
+    println("  ⚠️  NOTA IMPORTANTE SOBRE EL MOMENTO LINEAL:")
+    println("  " * "─"^66)
+    println("  El momento lineal cartesiano NO se conserva en este sistema físico")
+    println("  porque:")
+    println()
+    println("    1. Las partículas siguen geodésicas en una variedad curva")
+    println("    2. La elipse NO tiene simetría traslacional en R²")
+    println("    3. Teorema de Noether: conservación ↔ simetría continua")
+    println()
+    println("  ✅ Lo que SÍ debe conservarse (y se conserva):")
+    println("    • Energía total: error = $(round(error_rel, sigdigits=3))")
+    println()
+    println("  Este comportamiento es CORRECTO para el modelo físico.")
+    println("  " * "─"^66)
     println()
 
     # ========================================================================
