@@ -65,8 +65,7 @@ function cargar_conservacion(dir_resultados)
     return Dict(
         "time" => data[:, 1],
         "total_energy" => data[:, 2],
-        "momentum_x" => data[:, 3],
-        "momentum_y" => data[:, 4]
+        "angular_momentum" => data[:, 3]
     )
 end
 
@@ -133,6 +132,28 @@ function estadisticas_generales(traj, cons, coll)
         println("Conservación:       ⚠️  ACEPTABLE (< 1e-2)")
     else
         println("Conservación:       ❌ ALTO (> 1e-2)")
+    end
+    println()
+
+    # Momento Angular
+    L_inicial = cons["angular_momentum"][1]
+    L_final = cons["angular_momentum"][end]
+    ΔL = abs(L_final - L_inicial)
+    error_L = ΔL / max(abs(L_inicial), 1e-10)
+
+    println("L inicial:          ", @sprintf("%+.6e", L_inicial))
+    println("L final:            ", @sprintf("%+.6e", L_final))
+    println("Error absoluto:     ", @sprintf("%.6e", ΔL))
+    println("Error relativo:     ", @sprintf("%.6e", error_L))
+
+    if error_L < 1e-6
+        println("Conservación L:     ✅ EXCELENTE (< 1e-6)")
+    elseif error_L < 1e-4
+        println("Conservación L:     ✅ BUENO (< 1e-4)")
+    elseif error_L < 1e-2
+        println("Conservación L:     ⚠️  ACEPTABLE (< 1e-2)")
+    else
+        println("Conservación L:     ❌ ALTO (> 1e-2)")
     end
     println()
 
@@ -266,44 +287,62 @@ function crear_graficas(traj, cons, coll, dir_salida)
     println("  ✅ conservacion_energia.png")
 
     # ========================================================================
-    # Gráfica 5: Eventos de colisión
+    # Gráfica 5: Conservación de momento angular
+    # ========================================================================
+    p5 = plot(title="Conservación de Momento Angular",
+              xlabel="Tiempo (s)", ylabel="L (kg·m²/s)",
+              legend=false, size=(1200, 600))
+
+    plot!(p5, cons["time"], cons["angular_momentum"],
+          linewidth=2, color=:purple)
+
+    # Añadir línea de referencia
+    L0 = cons["angular_momentum"][1]
+    hline!(p5, [L0], linestyle=:dash, color=:red, linewidth=1,
+           label="L inicial")
+
+    savefig(p5, joinpath(dir_salida, "conservacion_momento_angular.png"))
+    println("  ✅ conservacion_momento_angular.png")
+
+    # ========================================================================
+    # Gráfica 6: Eventos de colisión
     # ========================================================================
     if sum(coll["had_collision"]) > 0
         idx_coll = coll["had_collision"] .== 1
 
-        p5 = scatter(coll["time"][idx_coll], coll["n_collisions"][idx_coll],
+        p6 = scatter(coll["time"][idx_coll], coll["n_collisions"][idx_coll],
                      title="Eventos de Colisión",
                      xlabel="Tiempo (s)", ylabel="Número de Colisiones",
                      legend=false, markersize=8, color=:red, alpha=0.6,
                      size=(1200, 600))
 
-        savefig(p5, joinpath(dir_salida, "eventos_colision.png"))
+        savefig(p6, joinpath(dir_salida, "eventos_colision.png"))
         println("  ✅ eventos_colision.png")
     else
         println("  ⚠️  Sin colisiones - no se genera eventos_colision.png")
     end
 
     # ========================================================================
-    # Gráfica 6: Error de energía relativo
+    # Gráfica 7: Error de energía relativo
     # ========================================================================
     E0 = cons["total_energy"][1]
     error_rel = abs.(cons["total_energy"] .- E0) ./ E0
 
-    p6 = plot(title="Error Relativo de Energía",
+    p7 = plot(title="Error Relativo de Energía",
               xlabel="Tiempo (s)", ylabel="|ΔE/E₀|",
               yscale=:log10, legend=false, size=(1200, 600))
 
-    plot!(p6, cons["time"], error_rel, linewidth=2, color=:blue)
+    plot!(p7, cons["time"], error_rel, linewidth=2, color=:blue)
 
     # Líneas de referencia
-    hline!(p6, [1e-6], linestyle=:dash, color=:green, linewidth=1,
+    hline!(p7, [1e-6], linestyle=:dash, color=:green, linewidth=1,
            label="Excelente (1e-6)")
-    hline!(p6, [1e-4], linestyle=:dash, color=:orange, linewidth=1,
+    hline!(p7, [1e-4], linestyle=:dash, color=:orange, linewidth=1,
            label="Bueno (1e-4)")
-    hline!(p6, [1e-2], linestyle=:dash, color=:red, linewidth=1,
+    hline!(p7, [1e-2], linestyle=:dash, color=:red, linewidth=1,
            label="Aceptable (1e-2)")
 
-    savefig(p6, joinpath(dir_salida, "error_energia.png"))
+    savefig(p7, joinpath(dir_salida, "error_energia.png"))
     println("  ✅ error_energia.png")
 
     println()

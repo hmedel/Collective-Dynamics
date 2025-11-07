@@ -88,73 +88,29 @@ function analizar(dir_resultados)
     end
     println()
 
-    # Momento
-    px_inicial = cons_data[1, 3]
-    py_inicial = cons_data[1, 4]
-    px_final = cons_data[end, 3]
-    py_final = cons_data[end, 4]
+    # Momento Angular
+    L_inicial = cons_data[1, 3]
+    L_final = cons_data[end, 3]
+    ΔL = abs(L_final - L_inicial)
+    error_L = ΔL / max(abs(L_inicial), 1e-10)
 
-    p_inicial = sqrt(px_inicial^2 + py_inicial^2)
-    p_final = sqrt(px_final^2 + py_final^2)
-    Δp_mag = abs(p_final - p_inicial)
-
-    # Errores en componentes individuales
-    Δpx = abs(px_final - px_inicial)
-    Δpy = abs(py_final - py_inicial)
-    error_px = Δpx / max(abs(px_inicial), 1e-10)
-    error_py = Δpy / max(abs(py_inicial), 1e-10)
-    error_p_mag = Δp_mag / max(p_inicial, 1e-10)
-
-    println("CONSERVACIÓN DE MOMENTO")
+    println("CONSERVACIÓN DE MOMENTO ANGULAR")
     println("="^70)
-    println("  Componente X:")
-    println(@sprintf("    Inicial:        %+.10e", px_inicial))
-    println(@sprintf("    Final:          %+.10e", px_final))
-    println(@sprintf("    Diferencia:     %+.10e", px_final - px_inicial))
-    println(@sprintf("    Error relativo: %.6e", error_px))
-    println()
-    println("  Componente Y:")
-    println(@sprintf("    Inicial:        %+.10e", py_inicial))
-    println(@sprintf("    Final:          %+.10e", py_final))
-    println(@sprintf("    Diferencia:     %+.10e", py_final - py_inicial))
-    println(@sprintf("    Error relativo: %.6e", error_py))
-    println()
-    println("  Magnitud del momento:")
-    println(@sprintf("    Inicial:        %.10e", p_inicial))
-    println(@sprintf("    Final:          %.10e", p_final))
-    println(@sprintf("    Diferencia:     %.10e", Δp_mag))
-    println(@sprintf("    Error relativo: %.6e", error_p_mag))
+    println(@sprintf("  L inicial:      %+.10e kg·m²/s", L_inicial))
+    println(@sprintf("  L final:        %+.10e kg·m²/s", L_final))
+    println(@sprintf("  Diferencia abs: %.10e kg·m²/s", ΔL))
+    println(@sprintf("  Error relativo: %.10e", error_L))
     println()
 
-    # Diagnóstico
-    max_error_p = max(error_px, error_py)
-    if max_error_p < 1e-6
-        println("  Estado: ✅ EXCELENTE conservación de momento")
-    elseif max_error_p < 1e-4
-        println("  Estado: ✅ BUENA conservación de momento")
-    elseif max_error_p < 1e-2
-        println("  Estado: ⚠️  ACEPTABLE conservación de momento")
+    if error_L < 1e-6
+        println("  Estado: ✅ EXCELENTE (error < 1e-6)")
+    elseif error_L < 1e-4
+        println("  Estado: ✅ BUENO (error < 1e-4)")
+    elseif error_L < 1e-2
+        println("  Estado: ⚠️  ACEPTABLE (error < 1e-2)")
     else
-        println("  Estado: ❌ POBRE conservación de momento")
+        println("  Estado: ❌ ALTO (error > 1e-2)")
     end
-    println()
-
-    # NOTA FÍSICA IMPORTANTE
-    println("  " * "─"^66)
-    println("  ⚠️  NOTA IMPORTANTE SOBRE EL MOMENTO LINEAL:")
-    println("  " * "─"^66)
-    println("  El momento lineal cartesiano NO se conserva en este sistema físico")
-    println("  porque:")
-    println()
-    println("    1. Las partículas siguen geodésicas en una variedad curva")
-    println("    2. La elipse NO tiene simetría traslacional en R²")
-    println("    3. Teorema de Noether: conservación ↔ simetría continua")
-    println()
-    println("  ✅ Lo que SÍ debe conservarse (y se conserva):")
-    println("    • Energía total: error = $(round(error_rel, sigdigits=3))")
-    println()
-    println("  Este comportamiento es CORRECTO para el modelo físico.")
-    println("  " * "─"^66)
     println()
 
     # ========================================================================

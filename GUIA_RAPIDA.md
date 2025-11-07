@@ -193,25 +193,32 @@ println("Colisiones en tiempos: ", collision_times)
 
 **Formato:**
 ```csv
-time,total_energy,momentum_x,momentum_y
-0.0000000000,4.503927817e+00,1.234567890e-15,-2.345678901e-16
-0.0100000000,4.503927815e+00,1.234567891e-15,-2.345678902e-16
+time,total_energy,angular_momentum
+0.0000000000,4.503927817e+00,1.234567890e+01
+0.0100000000,4.503927815e+00,1.234567891e+01
 ...
 ```
 
 **Columnas:**
 - `time`: Tiempo de simulación (s)
 - `total_energy`: Energía cinética total del sistema
-- `momentum_x`: Momento total en dirección x
-- `momentum_y`: Momento total en dirección y
+- `angular_momentum`: Momento angular total respecto al origen (kg·m²/s)
+
+**Nota:** El momento lineal NO se incluye porque no se conserva en este sistema (las partículas siguen geodésicas en una variedad curva sin simetría traslacional).
 
 **Uso típico:**
 ```julia
 cons_data, _ = readdlm("conservation.csv", ',', Float64, '\n'; header=true)
 E_initial = cons_data[1, 2]
 E_final = cons_data[end, 2]
-error_rel = abs(E_final - E_initial) / E_initial
-println("Error relativo de energía: ", error_rel)
+L_initial = cons_data[1, 3]
+L_final = cons_data[end, 3]
+
+error_E = abs(E_final - E_initial) / E_initial
+error_L = abs(L_final - L_initial) / abs(L_initial)
+
+println("Error relativo de energía: ", error_E)
+println("Error relativo de momento angular: ", error_L)
 ```
 
 ---
