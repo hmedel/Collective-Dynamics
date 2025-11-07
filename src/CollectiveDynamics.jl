@@ -122,11 +122,9 @@ export Particle,
        kinetic_energy,
        kinetic_energy_cartesian,
        angular_momentum,
-       linear_momentum_cartesian,
        initialize_particle,
        generate_random_particles,
        total_energy,
-       total_linear_momentum,
        center_of_mass
 
 # ============================================================================

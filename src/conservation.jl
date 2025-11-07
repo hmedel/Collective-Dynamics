@@ -25,14 +25,16 @@ Almacena datos de conservación a lo largo de la simulación.
 # Campos
 - `times::Vector{T}`: Tiempos de muestreo
 - `energies::Vector{T}`: Energía total en cada tiempo
-- `momenta::Vector{SVector{2,T}}`: Momento lineal total (cartesiano)
 - `angular_momenta::Vector{T}`: Momento angular total
 - `n_particles::Vector{Int}`: Número de partículas (para verificar)
+
+# Nota
+El momento lineal NO se almacena porque no se conserva en geodésicas
+sobre variedades curvas (sin simetría traslacional).
 """
 mutable struct ConservationData{T <: AbstractFloat}
     times::Vector{T}
     energies::Vector{T}
-    momenta::Vector{SVector{2,T}}
     angular_momenta::Vector{T}
     n_particles::Vector{Int}
 end
@@ -42,7 +44,6 @@ function ConservationData{T}() where {T <: AbstractFloat}
     return ConservationData{T}(
         Vector{T}(),
         Vector{T}(),
-        Vector{SVector{2,T}}(),
         Vector{T}(),
         Vector{Int}()
     )
@@ -53,7 +54,6 @@ function ConservationData{T}(capacity::Int) where {T <: AbstractFloat}
     return ConservationData{T}(
         Vector{T}(undef, 0),
         Vector{T}(undef, 0),
-        Vector{SVector{2,T}}(undef, 0),
         Vector{T}(undef, 0),
         Vector{Int}(undef, 0)
     )
@@ -84,13 +84,11 @@ function record_conservation!(
 
     # Calcular cantidades conservadas
     E = total_energy(particles, a, b)
-    p_cart = total_linear_momentum(particles)
     L = sum(p -> angular_momentum(p, a, b), particles)
 
     # Agregar a los vectores
     push!(data.times, t)
     push!(data.energies, E)
-    push!(data.momenta, p_cart)
     push!(data.angular_momenta, L)
     push!(data.n_particles, length(particles))
 
@@ -140,49 +138,6 @@ function analyze_energy_conservation(data::ConservationData{T}) where {T <: Abst
         max_rel_error = max_rel_error,
         rel_drift = rel_drift,
         is_conserved = max_rel_error < T(1e-4)  # Criterio del artículo
-    )
-end
-
-"""
-    analyze_momentum_conservation(data::ConservationData)
-
-Analiza la conservación del momento lineal.
-
-# Nota
-En una elipse cerrada sin fuerzas externas, el momento lineal total
-puede NO conservarse porque no hay simetría traslacional.
-Sin embargo, verificamos su variación como medida de precisión numérica.
-"""
-function analyze_momentum_conservation(data::ConservationData{T}) where {T <: AbstractFloat}
-    if isempty(data.momenta)
-        error("No hay datos de momento registrados")
-    end
-
-    p_initial = data.momenta[1]
-    p_final = data.momenta[end]
-
-    # Magnitud del momento
-    p_magnitudes = [norm(p) for p in data.momenta]
-    p_mag_initial = norm(p_initial)
-    p_mag_final = norm(p_final)
-    p_mag_mean = mean(p_magnitudes)
-    p_mag_std = std(p_magnitudes)
-
-    # Variación relativa
-    if p_mag_initial > eps(T)
-        rel_variation = maximum(abs.((p_magnitudes .- p_mag_initial) ./ p_mag_initial))
-    else
-        rel_variation = maximum(p_magnitudes)
-    end
-
-    return (
-        p_initial = p_initial,
-        p_final = p_final,
-        p_mag_initial = p_mag_initial,
-        p_mag_final = p_mag_final,
-        p_mag_mean = p_mag_mean,
-        p_mag_std = p_mag_std,
-        rel_variation = rel_variation
     )
 end
 
@@ -334,23 +289,6 @@ function get_energy_data(data::ConservationData{T}) where {T <: AbstractFloat}
     rel_errors = abs.((energies .- E0) ./ E0)
 
     return (times, energies, rel_errors)
-end
-
-"""
-    get_momentum_data(data::ConservationData)
-
-Extrae datos de momento para plotting.
-
-# Retorna
-- `(times, px, py, p_mag)`: Componentes y magnitud del momento
-"""
-function get_momentum_data(data::ConservationData{T}) where {T <: AbstractFloat}
-    times = data.times
-    px = [p[1] for p in data.momenta]
-    py = [p[2] for p in data.momenta]
-    p_mag = [norm(p) for p in data.momenta]
-
-    return (times, px, py, p_mag)
 end
 
 # ============================================================================
