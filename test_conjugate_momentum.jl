@@ -180,7 +180,7 @@ println("MOMENTO CONJUGADO FINAL POR PARTÍCULA")
 println("="^70)
 println()
 
-particles_final = data.particles_history[end]
+particles_final = data.particles
 println("ID | p_θ inicial   | p_θ final     | Δp_θ          | Error rel")
 println("-"^70)
 
