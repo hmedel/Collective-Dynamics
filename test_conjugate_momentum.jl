@@ -14,6 +14,7 @@ Uso:
 
 using CollectiveDynamics
 using Printf
+using Random
 
 println()
 println("="^70)
