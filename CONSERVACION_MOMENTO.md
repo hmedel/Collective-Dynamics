@@ -188,9 +188,9 @@ Para verificar completamente el sistema, faltaría analizar:
 
 2. **Momento conjugado en la variedad:**
    ```
-   p_θ = m g(θ) θ̇
+   p_θ = m √g(θ) θ̇
    ```
-   Este SÍ podría tener propiedades de conservación
+   Este SÍ tiene propiedades de conservación exacta
 
 3. **Adiabatic invariants** (si los hay)
 

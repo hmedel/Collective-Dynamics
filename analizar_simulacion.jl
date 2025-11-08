@@ -289,7 +289,7 @@ function crear_graficas(traj, cons, coll, dir_salida)
     # ========================================================================
     # Gráfica 5: Conservación de momento conjugado
     # ========================================================================
-    p5 = plot(title="Conservación de Momento Conjugado (p_θ = m g(θ) θ̇)",
+    p5 = plot(title="Conservación de Momento Conjugado (p_θ = m √g(θ) θ̇)",
               xlabel="Tiempo (s)", ylabel="P_θ",
               legend=false, size=(1200, 600))
 

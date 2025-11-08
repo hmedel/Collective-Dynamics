@@ -96,7 +96,7 @@ function analizar(dir_resultados)
 
     println("CONSERVACIÓN DE MOMENTO CONJUGADO")
     println("="^70)
-    println("  p_θ = m g(θ) θ̇ = m [a²sin²θ + b²cos²θ] θ̇")
+    println("  p_θ = m √g(θ) θ̇ = m √[a²sin²θ + b²cos²θ] θ̇")
     println()
     println(@sprintf("  P inicial:      %+.10e", P_inicial))
     println(@sprintf("  P final:        %+.10e", P_final))
