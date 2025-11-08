@@ -23,6 +23,7 @@ save_interval = 0.01 # Intervalo para guardar estados
 # Parámetros para método adaptativo
 dt_max = 1.0e-5      # Paso de tiempo máximo (solo adaptativo)
 dt_min = 1.0e-10     # Paso de tiempo mínimo (solo adaptativo)
+max_steps = 10_000_000  # Número máximo de pasos de integración (seguridad, solo adaptativo)
 
 # Parámetros para método de dt fijo
 dt_fixed = 1.0e-5    # Paso de tiempo fijo (solo método "fixed")

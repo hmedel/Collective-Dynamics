@@ -450,6 +450,47 @@ save_conservation = true
 
 ---
 
+### Caso 4: Simulaciones Muy Largas
+
+Para simulaciones que requieren muchas iteraciones (ej. tiempos muy largos con dt pequeño):
+
+**Archivo:** `config/simulacion_larga.toml`
+```toml
+[simulation]
+method = "adaptive"
+max_time = 100.0           # Tiempo muy largo
+dt_max = 1.0e-5
+max_steps = 100_000_000    # Aumentar límite de iteraciones
+save_interval = 1.0
+
+[particles.random]
+enabled = true
+n_particles = 10
+
+[output]
+save_trajectories = true
+save_conservation = true
+```
+
+**Parámetro `max_steps`:**
+- **Por defecto:** 10,000,000 (10 millones de pasos)
+- **Para qué sirve:** Evita loops infinitos si hay algún problema en la simulación
+- **Cuándo aumentarlo:** Si ves el warning "Alcanzado límite de pasos"
+- **Cálculo estimado:** `max_steps ≈ max_time / dt_max * 1.5` (factor de seguridad)
+
+**Ejemplo de cálculo:**
+```
+max_time = 100.0 s
+dt_max = 1e-5 s
+Pasos estimados = 100 / 1e-5 = 10,000,000
+Recomendado: max_steps = 15,000,000 (1.5× de seguridad)
+```
+
+**Tiempo de ejecución:** Puede tomar horas dependiendo de max_steps
+**Espacio en disco:** Variable, depende de save_interval
+
+---
+
 ## 📚 Documentación Adicional
 
 ### Guías Disponibles

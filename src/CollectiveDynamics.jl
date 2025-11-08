@@ -344,6 +344,7 @@ export simulate_ellipse
                               save_interval=0.01,
                               collision_method=:parallel_transport,
                               tolerance=1e-6,
+                              max_steps=10_000_000,
                               verbose=true)
 
 Simula dinámica de partículas en una elipse usando **tiempos adaptativos**.
@@ -353,7 +354,7 @@ Este es el algoritmo descrito en el artículo:
 2. Ajustar dt a ese tiempo (limitado por dt_max y dt_min)
 3. Evolucionar todas las partículas ese tiempo
 4. Resolver colisiones que ocurran
-5. Repetir hasta alcanzar max_time
+5. Repetir hasta alcanzar max_time o max_steps
 
 # Diferencia con simulate_ellipse
 - `simulate_ellipse`: usa dt fijo, puede perder colisiones o tener múltiples simultáneas
@@ -368,6 +369,7 @@ Este es el algoritmo descrito en el artículo:
 - `save_interval`: Intervalo de tiempo para guardar estados
 - `collision_method`: `:simple`, `:parallel_transport`, o `:geodesic`
 - `tolerance`: Tolerancia para verificar conservación
+- `max_steps`: Número máximo de pasos de integración (seguridad contra loops infinitos)
 - `verbose`: Imprimir progreso
 
 # Retorna
@@ -377,7 +379,8 @@ Este es el algoritmo descrito en el artículo:
 ```julia
 particles = generate_random_particles(40, 1.0, 0.05, 2.0, 1.0)
 data = simulate_ellipse_adaptive(particles, 2.0, 1.0;
-                                 max_time=1.0, dt_max=1e-5, verbose=true)
+                                 max_time=1.0, dt_max=1e-5,
+                                 max_steps=50_000_000, verbose=true)
 ```
 
 # Ventajas
@@ -385,11 +388,13 @@ data = simulate_ellipse_adaptive(particles, 2.0, 1.0;
 - Mejor conservación de energía
 - Evita colisiones múltiples simultáneas
 - Manejo automático de partículas "pegadas"
+- Control de límite de iteraciones para simulaciones largas
 
 # Notas
 - Más lento que `simulate_ellipse` debido al cálculo de tiempos
 - Ideal para sistemas con pocas partículas o alta precisión requerida
 - El vector de tiempos es irregular (no uniforme)
+- Si alcanza max_steps antes de max_time, la simulación se detiene con un warning
 """
 function simulate_ellipse_adaptive(
     particles_initial::Vector{Particle{T}},
@@ -401,6 +406,7 @@ function simulate_ellipse_adaptive(
     save_interval::T = T(0.01),
     collision_method::Symbol = :parallel_transport,
     tolerance::T = T(1e-6),
+    max_steps::Int = 10_000_000,
     verbose::Bool = true
 ) where {T <: AbstractFloat}
 
@@ -516,8 +522,8 @@ function simulate_ellipse_adaptive(
         end
 
         # Seguridad: evitar loops infinitos
-        if step > 1_000_000
-            @warn "Alcanzado límite de pasos (1M). Deteniendo simulación."
+        if step > max_steps
+            @warn "Alcanzado límite de pasos ($max_steps). Deteniendo simulación."
             break
         end
     end
