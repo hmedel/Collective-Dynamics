@@ -110,6 +110,7 @@ function run_simulation_from_config(config_file::String)
         # Método adaptativo
         dt_max = Float64(sim_config["dt_max"])
         dt_min = Float64(sim_config["dt_min"])
+        max_steps = haskey(sim_config, "max_steps") ? Int(sim_config["max_steps"]) : 10_000_000
 
         data = simulate_ellipse_adaptive(
             particles, a, b;
@@ -119,6 +120,7 @@ function run_simulation_from_config(config_file::String)
             save_interval = save_interval,
             collision_method = collision_method,
             tolerance = tolerance,
+            max_steps = max_steps,
             verbose = verbose
         )
 
