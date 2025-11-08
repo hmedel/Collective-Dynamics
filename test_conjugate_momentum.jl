@@ -43,7 +43,7 @@ for i in 1:5
     mass = 1.0
     radius = 0.05
 
-    push!(particles, initialize_particle(Float64(i), mass, radius, θ, θ_dot, a, b))
+    push!(particles, initialize_particle(i, mass, radius, θ, θ_dot, a, b))
 end
 
 println("  ✅ $(length(particles)) partículas creadas")
