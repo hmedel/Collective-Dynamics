@@ -333,12 +333,12 @@ function save_conservation_csv(
     cons = data.conservation
 
     open(filename, "w") do io
-        println(io, "time,total_energy,angular_momentum")
+        println(io, "time,total_energy,conjugate_momentum")
 
         for i in 1:length(cons.times)
             @printf(io, "%.10f,%.15e,%.15e\n",
                     cons.times[i], cons.energies[i],
-                    cons.angular_momenta[i])
+                    cons.conjugate_momenta[i])
         end
     end
 end

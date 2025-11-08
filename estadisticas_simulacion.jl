@@ -88,29 +88,35 @@ function analizar(dir_resultados)
     end
     println()
 
-    # Momento Angular
-    L_inicial = cons_data[1, 3]
-    L_final = cons_data[end, 3]
-    ΔL = abs(L_final - L_inicial)
-    error_L = ΔL / max(abs(L_inicial), 1e-10)
+    # Momento Conjugado
+    P_inicial = cons_data[1, 3]
+    P_final = cons_data[end, 3]
+    ΔP = abs(P_final - P_inicial)
+    error_P = ΔP / max(abs(P_inicial), 1e-10)
 
-    println("CONSERVACIÓN DE MOMENTO ANGULAR")
+    println("CONSERVACIÓN DE MOMENTO CONJUGADO")
     println("="^70)
-    println(@sprintf("  L inicial:      %+.10e kg·m²/s", L_inicial))
-    println(@sprintf("  L final:        %+.10e kg·m²/s", L_final))
-    println(@sprintf("  Diferencia abs: %.10e kg·m²/s", ΔL))
-    println(@sprintf("  Error relativo: %.10e", error_L))
+    println("  p_θ = m g(θ) θ̇ = m [a²sin²θ + b²cos²θ] θ̇")
+    println()
+    println(@sprintf("  P inicial:      %+.10e", P_inicial))
+    println(@sprintf("  P final:        %+.10e", P_final))
+    println(@sprintf("  Diferencia abs: %.10e", ΔP))
+    println(@sprintf("  Error relativo: %.10e", error_P))
     println()
 
-    if error_L < 1e-6
+    if error_P < 1e-6
         println("  Estado: ✅ EXCELENTE (error < 1e-6)")
-    elseif error_L < 1e-4
+    elseif error_P < 1e-4
         println("  Estado: ✅ BUENO (error < 1e-4)")
-    elseif error_L < 1e-2
+    elseif error_P < 1e-2
         println("  Estado: ⚠️  ACEPTABLE (error < 1e-2)")
     else
         println("  Estado: ❌ ALTO (error > 1e-2)")
     end
+    println()
+
+    println("  ℹ️  Esta es la cantidad que DEBE conservarse en el sistema.")
+    println("     No confundir con el momento angular L = r × p.")
     println()
 
     # ========================================================================
