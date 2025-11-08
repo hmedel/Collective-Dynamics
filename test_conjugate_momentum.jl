@@ -83,8 +83,7 @@ data = simulate_ellipse_adaptive(
     save_interval = 0.01,
     collision_method = :parallel_transport,
     tolerance = 1e-6,
-    verbose = false,
-    max_steps = 100000
+    verbose = false
 )
 
 println("  ✅ Simulación completada")
