@@ -25,8 +25,12 @@ Almacena datos de conservación a lo largo de la simulación.
 # Campos
 - `times::Vector{T}`: Tiempos de muestreo
 - `energies::Vector{T}`: Energía total en cada tiempo
-- `angular_momenta::Vector{T}`: Momento angular total
+- `conjugate_momenta::Vector{T}`: Momento conjugado total: Σᵢ mᵢ g(θᵢ) θ̇ᵢ
 - `n_particles::Vector{Int}`: Número de partículas (para verificar)
+
+# Cantidades Conservadas
+- **Energía total**: Debe conservarse (simetría temporal)
+- **Momento conjugado total**: Σᵢ p_θᵢ = Σᵢ mᵢ g(θᵢ) θ̇ᵢ debe conservarse
 
 # Nota
 El momento lineal NO se almacena porque no se conserva en geodésicas
@@ -35,7 +39,7 @@ sobre variedades curvas (sin simetría traslacional).
 mutable struct ConservationData{T <: AbstractFloat}
     times::Vector{T}
     energies::Vector{T}
-    angular_momenta::Vector{T}
+    conjugate_momenta::Vector{T}
     n_particles::Vector{Int}
 end
 
@@ -84,12 +88,12 @@ function record_conservation!(
 
     # Calcular cantidades conservadas
     E = total_energy(particles, a, b)
-    L = sum(p -> angular_momentum(p, a, b), particles)
+    P_total = sum(p -> conjugate_momentum(p, a, b), particles)
 
     # Agregar a los vectores
     push!(data.times, t)
     push!(data.energies, E)
-    push!(data.angular_momenta, L)
+    push!(data.conjugate_momenta, P_total)
     push!(data.n_particles, length(particles))
 
     return nothing
@@ -142,38 +146,53 @@ function analyze_energy_conservation(data::ConservationData{T}) where {T <: Abst
 end
 
 """
-    analyze_angular_momentum(data::ConservationData)
+    analyze_conjugate_momentum(data::ConservationData)
 
-Analiza el momento angular total.
+Analiza la conservación del momento conjugado total.
 
-# Nota Física
-En una elipse (a ≠ b), NO hay simetría rotacional, por lo que el momento
-angular NO es una cantidad conservada. Solo se conserva en círculos (a = b).
+# Matemática
+El momento conjugado total es:
+```
+P_total = Σᵢ p_θᵢ = Σᵢ mᵢ g(θᵢ) θ̇ᵢ
+```
 
-Esta función mide la variación para diagnosticar comportamiento del sistema.
+# Conservación
+Esta cantidad **DEBE conservarse** en el sistema sin fuerzas externas.
+Si no se conserva bien, indica problemas numéricos o en el manejo de colisiones.
+
+# Retorna
+- `P_initial`: Momento conjugado inicial
+- `P_final`: Momento conjugado final
+- `P_mean`: Valor medio
+- `P_std`: Desviación estándar
+- `rel_error`: Error relativo máximo |P - P₀|/P₀
 """
-function analyze_angular_momentum(data::ConservationData{T}) where {T <: AbstractFloat}
-    if isempty(data.angular_momenta)
-        error("No hay datos de momento angular registrados")
+function analyze_conjugate_momentum(data::ConservationData{T}) where {T <: AbstractFloat}
+    if isempty(data.conjugate_momenta)
+        error("No hay datos de momento conjugado registrados")
     end
 
-    L_initial = data.angular_momenta[1]
-    L_final = data.angular_momenta[end]
-    L_mean = mean(data.angular_momenta)
-    L_std = std(data.angular_momenta)
+    P_initial = data.conjugate_momenta[1]
+    P_final = data.conjugate_momenta[end]
+    P_mean = mean(data.conjugate_momenta)
+    P_std = std(data.conjugate_momenta)
 
-    if abs(L_initial) > eps(T)
-        rel_variation = maximum(abs.((data.angular_momenta .- L_initial) ./ L_initial))
+    if abs(P_initial) > eps(T)
+        rel_error = abs(P_final - P_initial) / abs(P_initial)
+        max_rel_error = maximum(abs.((data.conjugate_momenta .- P_initial) ./ P_initial))
     else
-        rel_variation = maximum(abs.(data.angular_momenta))
+        rel_error = abs(P_final - P_initial)
+        max_rel_error = maximum(abs.(data.conjugate_momenta))
     end
 
     return (
-        L_initial = L_initial,
-        L_final = L_final,
-        L_mean = L_mean,
-        L_std = L_std,
-        rel_variation = rel_variation
+        P_initial = P_initial,
+        P_final = P_final,
+        P_mean = P_mean,
+        P_std = P_std,
+        rel_error = rel_error,
+        max_rel_error = max_rel_error,
+        is_conserved = max_rel_error < T(1e-4)
     )
 end
 

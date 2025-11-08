@@ -65,7 +65,7 @@ function cargar_conservacion(dir_resultados)
     return Dict(
         "time" => data[:, 1],
         "total_energy" => data[:, 2],
-        "angular_momentum" => data[:, 3]
+        "conjugate_momentum" => data[:, 3]
     )
 end
 
@@ -135,25 +135,25 @@ function estadisticas_generales(traj, cons, coll)
     end
     println()
 
-    # Momento Angular
-    L_inicial = cons["angular_momentum"][1]
-    L_final = cons["angular_momentum"][end]
-    ΔL = abs(L_final - L_inicial)
-    error_L = ΔL / max(abs(L_inicial), 1e-10)
+    # Momento Conjugado
+    P_inicial = cons["conjugate_momentum"][1]
+    P_final = cons["conjugate_momentum"][end]
+    ΔP = abs(P_final - P_inicial)
+    error_P = ΔP / max(abs(P_inicial), 1e-10)
 
-    println("L inicial:          ", @sprintf("%+.6e", L_inicial))
-    println("L final:            ", @sprintf("%+.6e", L_final))
-    println("Error absoluto:     ", @sprintf("%.6e", ΔL))
-    println("Error relativo:     ", @sprintf("%.6e", error_L))
+    println("P_θ inicial:        ", @sprintf("%+.6e", P_inicial))
+    println("P_θ final:          ", @sprintf("%+.6e", P_final))
+    println("Error absoluto:     ", @sprintf("%.6e", ΔP))
+    println("Error relativo:     ", @sprintf("%.6e", error_P))
 
-    if error_L < 1e-6
-        println("Conservación L:     ✅ EXCELENTE (< 1e-6)")
-    elseif error_L < 1e-4
-        println("Conservación L:     ✅ BUENO (< 1e-4)")
-    elseif error_L < 1e-2
-        println("Conservación L:     ⚠️  ACEPTABLE (< 1e-2)")
+    if error_P < 1e-6
+        println("Conservación P_θ:   ✅ EXCELENTE (< 1e-6)")
+    elseif error_P < 1e-4
+        println("Conservación P_θ:   ✅ BUENO (< 1e-4)")
+    elseif error_P < 1e-2
+        println("Conservación P_θ:   ⚠️  ACEPTABLE (< 1e-2)")
     else
-        println("Conservación L:     ❌ ALTO (> 1e-2)")
+        println("Conservación P_θ:   ❌ ALTO (> 1e-2)")
     end
     println()
 
@@ -287,22 +287,22 @@ function crear_graficas(traj, cons, coll, dir_salida)
     println("  ✅ conservacion_energia.png")
 
     # ========================================================================
-    # Gráfica 5: Conservación de momento angular
+    # Gráfica 5: Conservación de momento conjugado
     # ========================================================================
-    p5 = plot(title="Conservación de Momento Angular",
-              xlabel="Tiempo (s)", ylabel="L (kg·m²/s)",
+    p5 = plot(title="Conservación de Momento Conjugado (p_θ = m g(θ) θ̇)",
+              xlabel="Tiempo (s)", ylabel="P_θ",
               legend=false, size=(1200, 600))
 
-    plot!(p5, cons["time"], cons["angular_momentum"],
+    plot!(p5, cons["time"], cons["conjugate_momentum"],
           linewidth=2, color=:purple)
 
     # Añadir línea de referencia
-    L0 = cons["angular_momentum"][1]
-    hline!(p5, [L0], linestyle=:dash, color=:red, linewidth=1,
-           label="L inicial")
+    P0 = cons["conjugate_momentum"][1]
+    hline!(p5, [P0], linestyle=:dash, color=:red, linewidth=1,
+           label="P_θ inicial")
 
-    savefig(p5, joinpath(dir_salida, "conservacion_momento_angular.png"))
-    println("  ✅ conservacion_momento_angular.png")
+    savefig(p5, joinpath(dir_salida, "conservacion_momento_conjugado.png"))
+    println("  ✅ conservacion_momento_conjugado.png")
 
     # ========================================================================
     # Gráfica 6: Eventos de colisión

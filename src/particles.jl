@@ -162,27 +162,59 @@ Debe ser equivalente a kinetic_energy(p, a, b).
 end
 
 """
-    angular_momentum(p::Particle, a, b)
+    conjugate_momentum(p::Particle, a, b)
 
-Calcula el momento angular de la partícula.
+Calcula el momento conjugado (momento canónico) de la partícula en la variedad.
 
 # Matemática
-Para una partícula en una elipse, el momento angular es:
+Para una partícula moviéndose en una elipse, el momento conjugado es:
 ```
-L = m g_θθ θ̇
+p_θ = m g(θ) θ̇ = m [a²sin²(θ) + b²cos²(θ)] θ̇
+```
+
+donde g(θ) = a²sin²(θ) + b²cos²(θ) es la componente de la métrica.
+
+# Conservación
+Esta cantidad **SÍ se conserva** para cada partícula en movimiento geodésico libre.
+Es el invariante fundamental del sistema y debe conservarse incluso con colisiones
+si se usa transporte paralelo correctamente.
+
+# Relación con el Hamiltoniano
+Esta es la cantidad que aparece en las ecuaciones de Hamilton:
+```
+H = p_θ² / (2m g(θ))
 ```
 
 # Nota
-En una elipse, L no es constante (no hay simetría rotacional).
-Solo es constante en una circunferencia (a = b).
+Anteriormente llamada "angular_momentum" pero ese nombre era confuso porque
+el verdadero momento angular L = r × p NO se conserva en elipses.
 """
-@inline function angular_momentum(
+@inline function conjugate_momentum(
     p::Particle{T},
     a::T,
     b::T
 ) where {T <: AbstractFloat}
     g = metric_ellipse(p.θ, a, b)
     return p.mass * g * p.θ_dot
+end
+
+"""
+    angular_momentum(p::Particle, a, b)
+
+**DEPRECADO:** Usa `conjugate_momentum` en su lugar.
+
+Esta función calcula el momento conjugado p_θ = m g(θ) θ̇,
+NO el momento angular clásico L = r × p.
+
+El nombre es confuso porque sugiere que se conserva como momento angular,
+pero en realidad es el momento conjugado en la métrica.
+"""
+@inline function angular_momentum(
+    p::Particle{T},
+    a::T,
+    b::T
+) where {T <: AbstractFloat}
+    return conjugate_momentum(p, a, b)
 end
 
 """
