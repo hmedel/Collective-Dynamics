@@ -202,11 +202,11 @@ time,total_energy,conjugate_momentum
 **Columnas:**
 - `time`: Tiempo de simulación (s)
 - `total_energy`: Energía cinética total del sistema
-- `conjugate_momentum`: Momento conjugado total Σᵢ mᵢ g(θᵢ) θ̇ᵢ
+- `conjugate_momentum`: Momento conjugado total Σᵢ mᵢ √g(θᵢ) θ̇ᵢ
 
 **Momento conjugado:** Esta es la cantidad que **SÍ se conserva** en el sistema:
 ```
-p_θ = m g(θ) θ̇ = m [a²sin²(θ) + b²cos²(θ)] θ̇
+p_θ = m √g(θ) θ̇ = m √[a²sin²(θ) + b²cos²(θ)] θ̇
 ```
 
 No confundir con:

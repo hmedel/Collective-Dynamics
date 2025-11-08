@@ -10,7 +10,7 @@ echo "Test de Conservación de Momento Conjugado"
 echo "======================================================================"
 echo ""
 echo "Este test verificará que la nueva implementación conserva correctamente"
-echo "el momento conjugado p_θ = m g(θ) θ̇ = m [a²sin²θ + b²cos²θ] θ̇"
+echo "el momento conjugado p_θ = m √g(θ) θ̇ = m √[a²sin²θ + b²cos²θ] θ̇"
 echo ""
 echo "Presiona ENTER para continuar..."
 read

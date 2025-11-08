@@ -169,10 +169,12 @@ Calcula el momento conjugado (momento canónico) de la partícula en la variedad
 # Matemática
 Para una partícula moviéndose en una elipse, el momento conjugado es:
 ```
-p_θ = m g(θ) θ̇ = m [a²sin²(θ) + b²cos²(θ)] θ̇
+p_θ = m √g(θ) θ̇ = m √[a²sin²(θ) + b²cos²(θ)] θ̇
 ```
 
 donde g(θ) = a²sin²(θ) + b²cos²(θ) es la componente de la métrica.
+
+**IMPORTANTE:** La cantidad conservada incluye la raíz cuadrada √g(θ), no g(θ) directamente.
 
 # Conservación
 Esta cantidad **SÍ se conserva** para cada partícula en movimiento geodésico libre.
@@ -180,9 +182,9 @@ Es el invariante fundamental del sistema y debe conservarse incluso con colision
 si se usa transporte paralelo correctamente.
 
 # Relación con el Hamiltoniano
-Esta es la cantidad que aparece en las ecuaciones de Hamilton:
+Esta es la cantidad que aparece en las ecuaciones de Hamilton para la elipse:
 ```
-H = p_θ² / (2m g(θ))
+H = p_θ² / (2m g(θ))  donde p_θ = m √g(θ) θ̇
 ```
 
 # Nota
@@ -195,7 +197,7 @@ el verdadero momento angular L = r × p NO se conserva en elipses.
     b::T
 ) where {T <: AbstractFloat}
     g = metric_ellipse(p.θ, a, b)
-    return p.mass * g * p.θ_dot
+    return p.mass * sqrt(g) * p.θ_dot
 end
 
 """
@@ -203,7 +205,7 @@ end
 
 **DEPRECADO:** Usa `conjugate_momentum` en su lugar.
 
-Esta función calcula el momento conjugado p_θ = m g(θ) θ̇,
+Esta función calcula el momento conjugado p_θ = m √g(θ) θ̇,
 NO el momento angular clásico L = r × p.
 
 El nombre es confuso porque sugiere que se conserva como momento angular,
