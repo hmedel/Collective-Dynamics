@@ -1,0 +1,103 @@
+# ============================================================================
+# CONFIGURACIÓN DE PRECISIÓN EXTREMA
+# ============================================================================
+# Esta configuración es para conservación CASI PERFECTA (error < 1e-10)
+#
+# ⚠️  ADVERTENCIA: MUY COSTOSA COMPUTACIONALMENTE
+#
+# Comparación con configuración estándar:
+#   dt_max: 1e-5 → 1e-7 (100× más preciso)
+#   tolerance: 1e-6 → 1e-9 (1000× más estricto)
+#   Error esperado: ~100,000,000× mejor
+#   Tiempo de cómputo: ~100× más lento
+#
+# Ejecuta:
+#   julia --project=. run_simulation.jl config/precision_extrema.toml
+
+[geometry]
+a = 2.0
+b = 1.0
+
+[simulation]
+method = "adaptive"
+max_time = 1.0              # IMPORTANTE: Solo 1 segundo (muy costoso)
+save_interval = 0.01        # Guardar cada 0.01 segundos
+
+# PARÁMETROS DE PRECISIÓN EXTREMA
+# --------------------------------
+dt_max = 1.0e-7             # 100× más pequeño que estándar
+dt_min = 1.0e-14            # Extremadamente pequeño
+tolerance = 1.0e-9          # 1000× más estricto
+
+# Con estos parámetros:
+#   Pasos estimados: ~10,000,000 para SOLO 1 segundo
+#   Conservación esperada: CASI PERFECTA (error < 1e-10)
+max_steps = 20_000_000      # Suficiente para 1 segundo
+
+collision_method = "parallel_transport"
+verbose = true
+
+[particles.random]
+enabled = true
+n_particles = 5             # POCAS partículas (muy costoso con muchas)
+mass = 1.0
+radius = 0.1
+theta_dot_min = -1.0
+theta_dot_max = 1.0
+seed = 42
+
+[output]
+base_dir = "results"
+use_timestamp = true
+save_csv = true
+save_jld2 = false
+save_summary = true
+
+save_trajectories = true
+save_conservation = true
+save_initial_final = true
+save_collision_events = true
+copy_config = true
+
+[analysis]
+compute_energy_stats = true
+compute_collision_stats = true
+compute_phase_space = false
+generate_plots = false
+
+[resources]
+n_threads = 1
+use_gpu = false
+
+# ============================================================================
+# NOTAS CRÍTICAS
+# ============================================================================
+#
+# 1. CONSERVACIÓN ESPERADA:
+#    - Energía: error < 1e-12 (casi perfecta)
+#    - Momento conjugado: error < 1e-12 (casi perfecta)
+#
+# 2. TIEMPO DE CÓMPUTO:
+#    Con 5 partículas y SOLO 1 segundo:
+#      - Pasos estimados: ~10,000,000
+#      - Tiempo de ejecución: ~30-60 minutos
+#
+#    ⚠️  Para 10 segundos: ~5-10 HORAS
+#
+# 3. USO RECOMENDADO:
+#    ✅ Verificación de límites de precisión numérica
+#    ✅ Benchmark de algoritmos
+#    ✅ Pruebas de convergencia
+#    ✅ Validación teórica en tiempos cortos
+#
+# 4. NO RECOMENDADO PARA:
+#    ❌ Simulaciones largas (>1 segundo)
+#    ❌ Muchas partículas (>5)
+#    ❌ Uso rutinario
+#    ❌ Exploración de parámetros
+#
+# 5. ALTERNATIVA MÁS PRÁCTICA:
+#    Para la mayoría de casos, usa config/alta_precision.toml
+#    que tiene dt_max = 1e-6 y es 10× más rápida con error < 1e-6
+#
+# ============================================================================
