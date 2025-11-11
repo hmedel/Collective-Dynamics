@@ -1,0 +1,93 @@
+# ============================================================================
+# CONFIGURACIÓN DE ULTRA PRECISIÓN
+# ============================================================================
+# Para minimizar el error del momento conjugado en colisiones
+#
+# El momento conjugado p_θ = m √g(θ) θ̇ se degrada en colisiones porque
+# el transporte paralelo no conserva esta cantidad exactamente.
+#
+# Solución: tolerance EXTREMADAMENTE baja + dt_max muy pequeño
+#
+# Ejecuta:
+#   julia --project=. run_simulation.jl config/ultra_precision.toml
+
+[geometry]
+a = 2.0
+b = 1.0
+
+[simulation]
+method = "adaptive"
+max_time = 10.0
+save_interval = 0.1
+
+# PARÁMETROS DE ULTRA PRECISIÓN
+# ------------------------------
+dt_max = 5.0e-7             # 20× más pequeño que estándar
+dt_min = 1.0e-14            # Extremadamente pequeño
+tolerance = 1.0e-9          # 1000× más estricto que estándar
+
+# Con estos parámetros:
+#   Error esperado en energía: < 1e-10
+#   Error esperado en momento: < 1e-8
+#   Pasos estimados: ~20,000,000 para 10 segundos
+max_steps = 30_000_000
+
+collision_method = "parallel_transport"
+verbose = true
+
+[particles.random]
+enabled = true
+n_particles = 10
+mass = 1.0
+radius = 0.1
+theta_dot_min = -1.0
+theta_dot_max = 1.0
+seed = 42
+
+[particles.from_file]
+enabled = false
+filename = "config/particles_custom.csv"
+
+[output]
+base_dir = "results"
+use_timestamp = true
+save_csv = true
+save_jld2 = false
+save_summary = true
+
+save_trajectories = true
+save_conservation = true
+save_initial_final = true
+save_collision_events = true
+copy_config = true
+
+[analysis]
+compute_energy_stats = true
+compute_collision_stats = true
+compute_phase_space = false
+generate_plots = false
+
+[resources]
+n_threads = 1
+use_gpu = false
+
+# ============================================================================
+# ADVERTENCIA
+# ============================================================================
+#
+# Esta configuración es MUY COSTOSA:
+#   - Tiempo de cómputo: ~1-2 HORAS para 10 segundos
+#   - Solo para verificación final de precisión máxima
+#
+# RESULTADOS ESPERADOS:
+#   - Error energía: < 1e-10 (casi perfecto)
+#   - Error momento conjugado: < 1e-8 (excelente, 10× mejor)
+#
+# NOTA SOBRE MOMENTO CONJUGADO:
+#   El método parallel_transport NO conserva p_θ = m √g(θ) θ̇ exactamente
+#   en colisiones porque √g(θ) varía con posición.
+#
+#   Con tolerance = 1e-9, el error por colisión es ~1000× menor,
+#   lo que debería dar error total < 1e-8.
+#
+# ============================================================================
