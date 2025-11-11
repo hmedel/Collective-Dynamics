@@ -46,6 +46,10 @@ theta_dot_min = -1.0
 theta_dot_max = 1.0
 seed = 42
 
+[particles.from_file]
+enabled = false
+filename = "config/particles_custom.csv"
+
 [output]
 base_dir = "results"
 use_timestamp = true
