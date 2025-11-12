@@ -4,9 +4,13 @@ analizar_espacio_fase_unwrapped.jl
 Análisis del espacio fase (θ, θ̇) con ángulo DESENROLLADO (unwrapped).
 
 IMPORTANTE:
-- θ no se reduce módulo 2π → vemos vueltas completas
+- θ no se reduce módulo 2π → vemos desplazamientos angulares continuos
 - θ puede ser negativo o > 2π
-- Permite ver topología del movimiento y winding numbers
+- Permite ver trayectorias sin saltos artificiales en 0/2π
+- Calcula desplazamiento angular neto: Δθ = θ_final - θ_inicial
+
+NOTA: El desplazamiento angular NO representa "vueltas completas" alrededor de la elipse.
+      Mide cuánto se desplazó cada partícula desde su posición inicial.
 
 Genera dos conjuntos de visualizaciones:
 1. Espacio UNWRAPPED: θ ∈ ℝ (ángulo real sin reducir)
@@ -150,25 +154,27 @@ println("  ✅ Ángulos desenrollados")
 println()
 
 # ============================================================================
-# Calcular estadísticas de winding
+# Calcular desplazamiento angular neto
 # ============================================================================
-println("📊 Calculando estadísticas de vueltas...")
+println("📊 Calculando desplazamientos angulares...")
 
-winding_numbers = Dict{Int, Float64}()
+desplazamientos = Dict{Int, Float64}()
 for id in unique_ids
     θ_inicial = trayectorias_unwrapped[id].theta[1]
     θ_final = trayectorias_unwrapped[id].theta[end]
 
-    # Número de vueltas = (θ_final - θ_inicial) / 2π
-    winding = (θ_final - θ_inicial) / (2π)
-    winding_numbers[id] = winding
+    # Desplazamiento angular neto (en radianes)
+    Δθ = θ_final - θ_inicial
+    desplazamientos[id] = Δθ
 end
 
-println("Número de vueltas por partícula:")
-for id in sort(collect(keys(winding_numbers)))
-    w = winding_numbers[id]
-    dirección = w > 0 ? "→" : "←"
-    println(@sprintf("  Partícula %2d: %+.2f vueltas %s", id, abs(w), dirección))
+println("Desplazamiento angular neto por partícula:")
+for id in sort(collect(keys(desplazamientos)))
+    Δθ = desplazamientos[id]
+    dirección = Δθ > 0 ? "→" : "←"
+    # Mostrar en radianes y grados
+    println(@sprintf("  Partícula %2d: %+.3f rad (%+.1f°) %s",
+                     id, Δθ, rad2deg(Δθ), dirección))
 end
 println()
 
@@ -188,6 +194,11 @@ if isfile(archivo_coll)
     collision_times = time_coll[had_collision]
     n_collisions = length(collision_times)
     println("  ✅ $(n_collisions) colisiones detectadas")
+    if n_collisions == 0
+        println("  ⚠️  NOTA: El número puede ser bajo si save_interval es grande.")
+        println("           Solo se reportan colisiones en tiempos guardados.")
+        println("           Para ver más colisiones, reduce save_interval en el config.")
+    end
 else
     println("  ⚠️  No se encontró información de colisiones")
 end
@@ -211,7 +222,7 @@ println("📊 Generando gráfica 1: Espacio fase unwrapped...")
 p1 = plot(
     xlabel = "θ (rad) - Ángulo Desenrollado",
     ylabel = "θ̇ (rad/s)",
-    title = "Espacio Fase: Ángulo Desenrollado (Vueltas Completas)",
+    title = "Espacio Fase: Ángulo Desenrollado (Trayectorias Continuas)",
     legend = :outerright,
     size = (1400, 800),
     dpi = 150
@@ -222,7 +233,7 @@ for (idx, id) in enumerate(unique_ids)
     traj = trayectorias_unwrapped[id]
 
     plot!(p1, traj.theta, traj.theta_dot,
-          label = @sprintf("Part %d (%.1f vueltas)", id, winding_numbers[id]),
+          label = @sprintf("Part %d (Δθ=%+.2f rad)", id, desplazamientos[id]),
           linewidth = 2,
           color = colores[idx],
           alpha = 0.7)
@@ -246,7 +257,7 @@ for (idx, id) in enumerate(unique_ids)
              label = "")
 end
 
-# Marcar líneas de 2π (vueltas completas)
+# Marcar líneas de 2π (referencia angular)
 θ_min = minimum(θ_unwrapped_all)
 θ_max = maximum(θ_unwrapped_all)
 n_lines_start = floor(Int, θ_min / (2π))
@@ -263,7 +274,7 @@ end
 
 # Anotar las líneas
 annotate!(p1, 0, maximum(θ̇_all)*0.95,
-          text("Líneas grises: múltiplos de 2π", 10, :gray))
+          text("Líneas grises: múltiplos de 2π (360°)", 10, :gray))
 
 savefig(p1, joinpath(dir_resultados, "espacio_fase_unwrapped.png"))
 println("  ✅ espacio_fase_unwrapped.png")
@@ -380,14 +391,14 @@ savefig(p4, joinpath(dir_resultados, "theta_vs_tiempo.png"))
 println("  ✅ theta_vs_tiempo.png")
 
 # ============================================================================
-# GRÁFICA 5: Winding Number vs Tiempo
+# GRÁFICA 5: Desplazamiento Angular vs Tiempo
 # ============================================================================
-println("📊 Generando gráfica 5: Número de vueltas vs tiempo...")
+println("📊 Generando gráfica 5: Desplazamiento angular vs tiempo...")
 
 p5 = plot(
     xlabel = "Tiempo (s)",
-    ylabel = "Número de Vueltas",
-    title = "Evolución del Número de Vueltas",
+    ylabel = "Desplazamiento Angular Δθ (rad)",
+    title = "Evolución del Desplazamiento Angular desde Posición Inicial",
     legend = :outerright,
     size = (1400, 800),
     dpi = 150
@@ -396,11 +407,11 @@ p5 = plot(
 for (idx, id) in enumerate(unique_ids)
     traj = trayectorias_unwrapped[id]
 
-    # Calcular winding acumulativo
+    # Calcular desplazamiento desde posición inicial
     θ_0 = traj.theta[1]
-    winding_vs_time = (traj.theta .- θ_0) ./ (2π)
+    desplazamiento_vs_time = traj.theta .- θ_0
 
-    plot!(p5, traj.time, winding_vs_time,
+    plot!(p5, traj.time, desplazamiento_vs_time,
           label = @sprintf("Partícula %d", id),
           linewidth = 2,
           color = colores[idx],
@@ -415,8 +426,8 @@ hline!(p5, [0],
        linewidth = 1,
        label = "")
 
-savefig(p5, joinpath(dir_resultados, "winding_vs_tiempo.png"))
-println("  ✅ winding_vs_tiempo.png")
+savefig(p5, joinpath(dir_resultados, "desplazamiento_vs_tiempo.png"))
+println("  ✅ desplazamiento_vs_tiempo.png")
 
 # ============================================================================
 # Estadísticas
@@ -428,11 +439,10 @@ println("="^80)
 println()
 
 println("ÁNGULO UNWRAPPED:")
-println(@sprintf("  θ mínimo:  %+.3f rad  (%.2f vueltas)", minimum(θ_unwrapped_all), minimum(θ_unwrapped_all)/(2π)))
-println(@sprintf("  θ máximo:  %+.3f rad  (%.2f vueltas)", maximum(θ_unwrapped_all), maximum(θ_unwrapped_all)/(2π)))
-println(@sprintf("  Rango:     %.3f rad  (%.2f vueltas)",
-                 maximum(θ_unwrapped_all) - minimum(θ_unwrapped_all),
-                 (maximum(θ_unwrapped_all) - minimum(θ_unwrapped_all))/(2π)))
+println(@sprintf("  θ mínimo:  %+.3f rad  (%+.1f°)", minimum(θ_unwrapped_all), rad2deg(minimum(θ_unwrapped_all))))
+println(@sprintf("  θ máximo:  %+.3f rad  (%+.1f°)", maximum(θ_unwrapped_all), rad2deg(maximum(θ_unwrapped_all))))
+θ_range = maximum(θ_unwrapped_all) - minimum(θ_unwrapped_all)
+println(@sprintf("  Rango:     %.3f rad  (%.1f°)", θ_range, rad2deg(θ_range)))
 println()
 
 println("VELOCIDAD ANGULAR:")
@@ -441,12 +451,13 @@ println(@sprintf("  θ̇ máximo:  %+.3f rad/s", maximum(θ̇_all)))
 println(@sprintf("  <θ̇>:      %+.3f rad/s", mean(θ̇_all)))
 println()
 
-println("WINDING NUMBERS:")
-total_winding = sum(values(winding_numbers))
-println(@sprintf("  Total system: %+.2f vueltas netas", total_winding))
-println(@sprintf("  Promedio:     %+.2f vueltas/partícula", total_winding/n_particles))
-max_winding = maximum(abs.(values(winding_numbers)))
-println(@sprintf("  Máximo |w|:   %.2f vueltas", max_winding))
+println("DESPLAZAMIENTOS ANGULARES NETOS:")
+total_desplazamiento = sum(values(desplazamientos))
+println(@sprintf("  Total del sistema: %+.3f rad (%+.1f°)", total_desplazamiento, rad2deg(total_desplazamiento)))
+println(@sprintf("  Promedio:          %+.3f rad (%+.1f°) por partícula",
+                 total_desplazamiento/n_particles, rad2deg(total_desplazamiento/n_particles)))
+max_desplazamiento = maximum(abs.(values(desplazamientos)))
+println(@sprintf("  Máximo |Δθ|:       %.3f rad (%.1f°)", max_desplazamiento, rad2deg(max_desplazamiento)))
 println()
 
 if n_collisions > 0
@@ -464,15 +475,16 @@ println("✅ ANÁLISIS COMPLETADO")
 println("="^80)
 println()
 println("Gráficas generadas en: $dir_resultados")
-println("  📈 espacio_fase_unwrapped.png    - Ángulo desenrollado (RECOMENDADO)")
-println("  📈 espacio_fase_wrapped.png      - Ángulo reducido (comparación)")
-println("  📈 espacio_fase_comparacion.png  - Ambos lado a lado")
-println("  📈 theta_vs_tiempo.png           - Evolución θ(t)")
-println("  📈 winding_vs_tiempo.png         - Número de vueltas vs tiempo")
+println("  📈 espacio_fase_unwrapped.png       - Ángulo desenrollado (RECOMENDADO)")
+println("  📈 espacio_fase_wrapped.png         - Ángulo reducido (comparación)")
+println("  📈 espacio_fase_comparacion.png     - Ambos lado a lado")
+println("  📈 theta_vs_tiempo.png              - Evolución θ(t)")
+println("  📈 desplazamiento_vs_tiempo.png     - Desplazamiento angular vs tiempo")
 println()
 println("INTERPRETACIÓN:")
-println("  • Gráfica unwrapped muestra movimiento REAL (sin saltos artificiales)")
-println("  • Gráfica wrapped muestra saltos en 0/2π (artefacto de reducción)")
-println("  • Winding numbers indican dirección predominante del movimiento")
+println("  • Gráfica unwrapped: movimiento REAL sin saltos artificiales")
+println("  • Gráfica wrapped: muestra saltos en 0/2π (artefacto de reducción módulo 2π)")
+println("  • Desplazamientos angulares: miden cuánto se movió cada partícula desde su posición inicial")
+println("  • NO representan \"vueltas completas\" alrededor de la elipse (las partículas no se atraviesan)")
 println()
 println("="^80)

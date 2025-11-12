@@ -4,16 +4,19 @@ animar_espacio_fase_video.jl
 Genera un VIDEO (MP4) animado del espacio fase con ÁNGULOS DESENROLLADOS.
 
 IMPORTANTE:
-- θ no se reduce módulo 2π → vemos vueltas completas
+- θ no se reduce módulo 2π → vemos desplazamientos angulares continuos
 - θ puede ser negativo o > 2π
-- Permite ver topología del movimiento y winding numbers
+- Permite ver trayectorias sin saltos artificiales en 0/2π
 - Formato MP4 (mejor calidad y menor tamaño que GIF)
+
+NOTA: El desplazamiento angular NO representa "vueltas completas" alrededor de la elipse.
+      Mide cuánto se desplazó cada partícula desde su posición inicial.
 
 Características visuales:
 - Rastro desvaneciente (últimos N puntos)
 - Flash rojo en colisiones
 - Marcadores grandes para posiciones actuales
-- Líneas de 2π para marcar vueltas completas
+- Líneas de 2π para referencia angular (360°)
 
 Uso:
     julia --project=. animar_espacio_fase_video.jl results/simulation_XXXXXX/ [fps] [trail_length]
@@ -159,23 +162,24 @@ println("  ✅ Ángulos desenrollados")
 println()
 
 # ============================================================================
-# Calcular winding numbers
+# Calcular desplazamientos angulares netos
 # ============================================================================
-println("📊 Calculando estadísticas de vueltas...")
+println("📊 Calculando desplazamientos angulares...")
 
-winding_numbers = Dict{Int, Float64}()
+desplazamientos = Dict{Int, Float64}()
 for id in unique_ids
     θ_inicial = trayectorias[id].theta[1]
     θ_final = trayectorias[id].theta[end]
-    winding = (θ_final - θ_inicial) / (2π)
-    winding_numbers[id] = winding
+    Δθ = θ_final - θ_inicial
+    desplazamientos[id] = Δθ
 end
 
-println("Número de vueltas por partícula:")
-for id in sort(collect(keys(winding_numbers)))
-    w = winding_numbers[id]
-    dirección = w > 0 ? "→" : "←"
-    println(@sprintf("  Partícula %2d: %+.2f vueltas %s", id, abs(w), dirección))
+println("Desplazamiento angular neto por partícula:")
+for id in sort(collect(keys(desplazamientos)))
+    Δθ = desplazamientos[id]
+    dirección = Δθ > 0 ? "→" : "←"
+    println(@sprintf("  Partícula %2d: %+.3f rad (%+.1f°) %s",
+                     id, Δθ, rad2deg(Δθ), dirección))
 end
 println()
 
@@ -195,6 +199,11 @@ if isfile(archivo_coll)
     collision_times = time_coll[had_collision]
     n_collisions = length(collision_times)
     println("  ✅ $(n_collisions) colisiones detectadas")
+    if n_collisions == 0
+        println("  ⚠️  NOTA: El número puede ser bajo si save_interval es grande.")
+        println("           Solo se reportan colisiones en tiempos guardados.")
+        println("           Para ver más colisiones, reduce save_interval en el config.")
+    end
 else
     println("  ⚠️  No se encontró información de colisiones")
 end
@@ -340,7 +349,7 @@ anim = @animate for (frame_idx, t) in enumerate(unique_times)
                      color = colores[idx],
                      markerstrokewidth = 2,
                      markerstrokecolor = :white,
-                     label = (frame_idx == 1 ? @sprintf("Part %d (%.1f vueltas)", id, winding_numbers[id]) : ""))
+                     label = (frame_idx == 1 ? @sprintf("Part %d (Δθ=%+.2f rad)", id, desplazamientos[id]) : ""))
         end
     end
 
@@ -406,11 +415,15 @@ println("Video generado en: $dir_resultados")
 println("  🎥 espacio_fase_unwrapped_animacion.mp4")
 println()
 println("CARACTERÍSTICAS:")
-println("  • Ángulos desenrollados (θ ∈ ℝ) - vueltas completas visibles")
+println("  • Ángulos desenrollados (θ ∈ ℝ) - trayectorias continuas sin saltos")
 println("  • Rastro desvaneciente de últimos $trail_length puntos")
 println("  • Flash rojo en colisiones")
-println("  • Líneas grises marcan múltiplos de 2π")
+println("  • Líneas grises marcan múltiplos de 2π (360°)")
 println("  • Formato MP4 de alta calidad")
+println()
+println("NOTA:")
+println("  • El desplazamiento angular NO representa \"vueltas completas\" alrededor de la elipse")
+println("  • Mide cuánto se movió cada partícula desde su posición inicial")
 println()
 println("REPRODUCIR:")
 println("  En Linux:")
