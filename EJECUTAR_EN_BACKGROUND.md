@@ -1,548 +1,476 @@
 # Guía: Ejecutar Simulaciones en Background
 
-Esta guía explica cómo ejecutar simulaciones largas en background de manera que continúen ejecutándose incluso después de cerrar la sesión SSH.
-
-## 📋 Tabla de Contenidos
-
-1. [Método 1: Script Wrapper (Recomendado)](#método-1-script-wrapper-recomendado)
-2. [Método 2: nohup Manual](#método-2-nohup-manual)
-3. [Método 3: screen](#método-3-screen)
-4. [Método 4: tmux](#método-4-tmux)
-5. [Monitoreo de Simulaciones](#monitoreo-de-simulaciones)
-6. [Gestión de Procesos](#gestión-de-procesos)
-7. [Tips y Mejores Prácticas](#tips-y-mejores-prácticas)
+Esta guía explica cómo ejecutar simulaciones largas que continúen corriendo incluso después de cerrar la sesión SSH.
 
 ---
 
-## Método 1: Script Wrapper (Recomendado)
-
-El método más simple es usar el script `run_simulation_bg.sh` que automatiza todo el proceso.
-
-### Uso Básico
+## TL;DR - Lo Más Simple
 
 ```bash
-# Ejecutar simulación en background
-./run_simulation_bg.sh config/ultra_precision.toml
+# Ejecutar en background
+nohup julia --project=. run_simulation.jl config/ultra_precision.toml > simulation.log 2>&1 &
 
-# Con descripción opcional
-./run_simulation_bg.sh config/alta_precision.toml "Prueba conservación energía"
+# Guardar el PID (opcional)
+echo $! > simulation.pid
+
+# Ver progreso
+tail -f simulation.log
+
+# Cerrar SSH sin problemas
+exit
 ```
 
-### Lo que hace el script
-
-1. Ejecuta Julia con `nohup` en background
-2. Redirige toda la salida a un archivo de log en `logs/`
-3. Guarda el PID (Process ID) en un archivo `.pid`
-4. Te muestra información para monitorear el progreso
-5. Permite cerrar la sesión SSH sin interrumpir la simulación
-
-### Ejemplo de Uso
-
-```bash
-$ ./run_simulation_bg.sh config/ultra_precision.toml
-
-================================================================================
-EJECUTANDO SIMULACIÓN EN BACKGROUND
-================================================================================
-
-Configuración: config/ultra_precision.toml
-Descripción:   Simulación en background
-Log file:      logs/simulation_20251113_143022.log
-PID file:      logs/simulation_20251113_143022.pid
-
-✅ Simulación iniciada correctamente
-
-📊 INFORMACIÓN DEL PROCESO:
-   PID:        12345
-   Config:     config/ultra_precision.toml
-   Log:        logs/simulation_20251113_143022.log
-
-📋 COMANDOS ÚTILES:
-
-   Ver progreso en tiempo real:
-     tail -f logs/simulation_20251113_143022.log
-
-   Verificar si sigue corriendo:
-     ./check_simulation.sh 12345
-
-   Detener la simulación:
-     kill 12345
-```
-
-### Verificar Estado
-
-```bash
-# Ver todas las simulaciones en ejecución
-./check_simulation.sh
-
-# Verificar simulación específica por PID
-./check_simulation.sh 12345
-
-# Verificar desde archivo PID
-./check_simulation.sh logs/simulation_20251113_143022.pid
-```
+**¡Eso es todo!** La simulación continuará corriendo.
 
 ---
 
-## Método 2: nohup Manual
+## Método Recomendado (nohup)
 
-Si prefieres control manual, usa `nohup` directamente.
-
-### Paso 1: Crear directorio de logs
+### Paso 1: Ejecutar en Background
 
 ```bash
-mkdir -p logs
+nohup julia --project=. run_simulation.jl config/ultra_precision.toml > mi_simulacion.log 2>&1 &
 ```
 
-### Paso 2: Ejecutar con nohup
+**Explicación:**
+- `nohup` → El proceso ignora la señal de desconexión (SIGHUP)
+- `> mi_simulacion.log` → Guarda la salida en un archivo
+- `2>&1` → También guarda los errores en el mismo archivo
+- `&` → Ejecuta en background
 
-```bash
-nohup julia --project=. run_simulation.jl config/ultra_precision.toml > logs/mi_simulacion.log 2>&1 &
+El comando te mostrará algo como:
+```
+[1] 12345
 ```
 
-Explicación:
-- `nohup`: Hace que el proceso ignore la señal SIGHUP (cuando cierras la sesión)
-- `> logs/mi_simulacion.log`: Redirige stdout al log
-- `2>&1`: Redirige stderr también al log
-- `&`: Ejecuta en background
+Ese número (`12345`) es el **PID** del proceso.
 
-### Paso 3: Guardar el PID
+### Paso 2: Guardar el PID (Opcional pero Útil)
 
 ```bash
-echo $! > logs/mi_simulacion.pid
+echo $! > mi_simulacion.pid
 ```
 
 La variable `$!` contiene el PID del último proceso en background.
 
-### Paso 4: Monitorear
+### Paso 3: Verificar que Está Corriendo
 
 ```bash
-# Ver progreso en tiempo real
-tail -f logs/mi_simulacion.log
+# Ver el proceso
+ps -p $(cat mi_simulacion.pid)
+
+# O buscar todos los procesos de Julia
+ps aux | grep julia
+```
+
+Si ves una línea con tu proceso, está corriendo correctamente.
+
+### Paso 4: Monitorear el Progreso
+
+```bash
+# Ver en tiempo real (Ctrl+C para salir)
+tail -f mi_simulacion.log
 
 # Ver últimas 50 líneas
-tail -n 50 logs/mi_simulacion.log
+tail -n 50 mi_simulacion.log
 
 # Buscar errores
-grep -i error logs/mi_simulacion.log
+grep -i error mi_simulacion.log
 ```
 
-### Paso 5: Verificar si sigue corriendo
+### Paso 5: Cerrar SSH Tranquilamente
 
 ```bash
-PID=$(cat logs/mi_simulacion.pid)
-ps -p $PID
-```
-
-Si el proceso está corriendo, verás algo como:
-```
-  PID TTY          TIME CMD
-12345 ?        00:45:32 julia
-```
-
----
-
-## Método 3: screen
-
-`screen` permite crear sesiones de terminal que persisten al cerrar SSH.
-
-### Instalación (si no está instalado)
-
-```bash
-sudo apt-get install screen
-```
-
-### Uso
-
-```bash
-# Crear nueva sesión llamada "sim"
-screen -S sim
-
-# Dentro de screen, ejecutar la simulación
-julia --project=. run_simulation.jl config/ultra_precision.toml
-
-# Desconectar de screen (la simulación sigue corriendo)
-# Presiona: Ctrl+A, luego D
-
-# Listar sesiones de screen
-screen -ls
-
-# Reconectar a la sesión
-screen -r sim
-
-# Terminar screen (desde dentro de la sesión)
 exit
 ```
 
-### Ventajas
+La simulación seguirá corriendo en el servidor.
 
-- Puedes reconectarte y ver el output en tiempo real
-- Puedes tener múltiples ventanas/sesiones
-- Control interactivo completo
-
-### Desventajas
-
-- Requiere instalar screen
-- No guarda logs automáticamente (a menos que lo hagas manualmente)
-
----
-
-## Método 4: tmux
-
-`tmux` es similar a screen pero más moderno y con más características.
-
-### Instalación (si no está instalado)
+### Para Detener la Simulación (si es necesario)
 
 ```bash
-sudo apt-get install tmux
-```
+# Detención normal
+kill $(cat mi_simulacion.pid)
 
-### Uso Básico
-
-```bash
-# Crear nueva sesión llamada "sim"
-tmux new -s sim
-
-# Dentro de tmux, ejecutar la simulación
-julia --project=. run_simulation.jl config/ultra_precision.toml
-
-# Desconectar de tmux (la simulación sigue corriendo)
-# Presiona: Ctrl+B, luego D
-
-# Listar sesiones
-tmux ls
-
-# Reconectar a la sesión
-tmux attach -t sim
-
-# Terminar tmux (desde dentro)
-exit
-```
-
-### Comandos Útiles de tmux
-
-| Comando | Acción |
-|---------|--------|
-| `Ctrl+B %` | Dividir panel verticalmente |
-| `Ctrl+B "` | Dividir panel horizontalmente |
-| `Ctrl+B →` | Moverse al panel derecho |
-| `Ctrl+B ←` | Moverse al panel izquierdo |
-| `Ctrl+B C` | Crear nueva ventana |
-| `Ctrl+B N` | Siguiente ventana |
-| `Ctrl+B D` | Desconectar (detach) |
-
-### Ejemplo: Simulación + Monitoreo
-
-```bash
-# Crear sesión
-tmux new -s sim
-
-# Dividir pantalla horizontalmente
-# Presiona: Ctrl+B "
-
-# Panel superior: ejecutar simulación
-julia --project=. run_simulation.jl config/ultra_precision.toml
-
-# Mover al panel inferior
-# Presiona: Ctrl+B ↓
-
-# Panel inferior: monitorear resultados
-watch -n 5 'ls -lh results/ | tail -n 10'
-
-# Desconectar
-# Presiona: Ctrl+B D
+# Si no responde (último recurso)
+kill -9 $(cat mi_simulacion.pid)
 ```
 
 ---
 
-## Monitoreo de Simulaciones
+## Organizando Múltiples Simulaciones
 
-### Script de Verificación
+Si ejecutas varias simulaciones, usa nombres descriptivos con timestamps:
+
+```bash
+# Crear directorio de logs
+mkdir -p logs
+
+# Ejecutar con nombre descriptivo
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+nohup julia --project=. run_simulation.jl config/ultra_precision.toml \
+  > logs/ultra_${TIMESTAMP}.log 2>&1 &
+echo $! > logs/ultra_${TIMESTAMP}.pid
+
+# Ejecutar otra
+nohup julia --project=. run_simulation.jl config/alta_precision.toml \
+  > logs/alta_${TIMESTAMP}.log 2>&1 &
+echo $! > logs/alta_${TIMESTAMP}.pid
+```
+
+Ver todas las simulaciones:
+```bash
+# Listar procesos de Julia
+ps aux | grep julia
+
+# Ver logs recientes
+ls -lht logs/
+```
+
+---
+
+## Scripts Helper (Opcional)
+
+Si ejecutas simulaciones frecuentemente, puedes usar los scripts incluidos que automatizan lo anterior:
+
+### run_simulation_bg.sh
+
+```bash
+# Ejecuta la simulación y crea logs automáticamente
+./run_simulation_bg.sh config/ultra_precision.toml
+
+# Con descripción
+./run_simulation_bg.sh config/alta_precision.toml "Test conservación"
+```
+
+Esto hace automáticamente:
+- Crea `logs/simulation_TIMESTAMP.log`
+- Guarda el PID en `logs/simulation_TIMESTAMP.pid`
+- Te muestra comandos útiles
+
+### check_simulation.sh
 
 ```bash
 # Ver todas las simulaciones
 ./check_simulation.sh
 
-# Ver simulación específica
+# Verificar simulación específica
 ./check_simulation.sh 12345
 ```
 
-### Comandos Útiles
+Muestra:
+- Estado (corriendo/completada/error)
+- Uso de CPU/memoria
+- Últimas líneas del log
 
-#### Ver procesos de Julia
+**Nota:** Estos scripts son conveniencia, no son necesarios. El método básico con `nohup` es suficiente.
+
+---
+
+## Métodos Alternativos
+
+### screen (para sesiones interactivas)
+
+Si quieres reconectarte y ver el output interactivo:
 
 ```bash
-ps aux | grep julia
+# Instalar si no está disponible
+sudo apt-get install screen
+
+# Crear sesión
+screen -S sim
+
+# Ejecutar simulación (sin nohup)
+julia --project=. run_simulation.jl config/ultra_precision.toml
+
+# Desconectar (simulación sigue corriendo)
+# Presiona: Ctrl+A, luego D
+
+# Cerrar SSH
+exit
+
+# Más tarde, reconectar
+ssh usuario@servidor
+screen -r sim
+
+# Ver sesiones disponibles
+screen -ls
 ```
 
-#### Ver uso de CPU/Memoria
+### tmux (similar a screen, más moderno)
 
 ```bash
-# Usando top
+# Instalar si no está disponible
+sudo apt-get install tmux
+
+# Crear sesión
+tmux new -s sim
+
+# Ejecutar simulación
+julia --project=. run_simulation.jl config/ultra_precision.toml
+
+# Desconectar
+# Presiona: Ctrl+B, luego D
+
+# Reconectar
+tmux attach -t sim
+
+# Ver sesiones
+tmux ls
+```
+
+**Ventajas de screen/tmux:**
+- Puedes reconectarte y ver el output en tiempo real
+- Puedes interactuar con el proceso (pausar con Ctrl+Z, etc.)
+- Puedes dividir la pantalla en múltiples paneles
+
+**Desventajas:**
+- Requieren instalación
+- Más complejos para uso básico
+
+---
+
+## Comandos Útiles
+
+### Monitoreo de Recursos
+
+```bash
+# Ver uso de CPU/memoria de un proceso específico
 top -p 12345
 
-# Usando htop (más amigable)
+# Más amigable (si está instalado)
 htop -p 12345
-```
 
-#### Monitoreo continuo del log
+# Uso de disco
+df -h
 
-```bash
-# Ver últimas líneas continuamente
-tail -f logs/simulation_20251113_143022.log
-
-# Filtrar solo líneas importantes
-tail -f logs/simulation_20251113_143022.log | grep -E "Paso|completada|Error"
-```
-
-#### Ver estadísticas de IO
-
-```bash
+# IO del disco
 iostat -x 2
 ```
 
----
-
-## Gestión de Procesos
-
-### Detener una Simulación
+### Verificar que el Log Está Creciendo
 
 ```bash
-# Detención normal (permite cleanup)
-kill 12345
+# Ver tamaño del log
+ls -lh simulation.log
 
-# Si no responde después de 30 segundos, forzar
-kill -9 12345
-```
-
-### Pausar y Reanudar (solo con screen/tmux)
-
-```bash
-# Dentro de screen/tmux, pausar con Ctrl+Z
-
-# Reanudar
-fg
-```
-
-### Limitar Recursos
-
-Si quieres limitar el uso de CPU:
-
-```bash
-# Usar nice (ejecuta con menor prioridad)
-nice -n 10 julia --project=. run_simulation.jl config/ultra_precision.toml
-
-# Con nohup
-nohup nice -n 10 julia --project=. run_simulation.jl config/ultra_precision.toml > logs/sim.log 2>&1 &
-```
-
-Valores de nice:
-- `-20` = máxima prioridad (requiere root)
-- `0` = prioridad normal
-- `19` = mínima prioridad
-
----
-
-## Tips y Mejores Prácticas
-
-### 1. Siempre Redirigir la Salida
-
-```bash
-# ✅ BIEN - salida guardada
-nohup julia --project=. run_simulation.jl config.toml > logs/sim.log 2>&1 &
-
-# ❌ MAL - salida se pierde
-nohup julia --project=. run_simulation.jl config.toml &
-```
-
-### 2. Guardar el PID
-
-```bash
-# Guardar inmediatamente después de iniciar
-nohup julia --project=. run_simulation.jl config.toml > logs/sim.log 2>&1 &
-echo $! > logs/sim.pid
-```
-
-### 3. Usar Nombres Descriptivos
-
-```bash
-# ✅ BIEN
-logs/ultra_precision_20251113.log
-
-# ❌ MAL
-logs/output.log
-```
-
-### 4. Verificar Antes de Cerrar SSH
-
-```bash
-# Verificar que el proceso está corriendo
-ps -p $(cat logs/sim.pid)
-
-# Verificar que el log está creciendo
-ls -lh logs/sim.log
+# Esperar 10 segundos
 sleep 10
-ls -lh logs/sim.log  # Debe tener mayor tamaño
+
+# Ver de nuevo (debe ser más grande)
+ls -lh simulation.log
 ```
 
-### 5. Monitoreo Periódico
-
-Crea un cronjob para verificar simulaciones:
+### Buscar en los Logs
 
 ```bash
-# Editar crontab
-crontab -e
+# Buscar errores
+grep -i error simulation.log
 
-# Agregar línea para verificar cada hora
-0 * * * * /path/to/check_simulation.sh > /path/to/simulation_status.txt
-```
+# Buscar líneas con "Paso"
+grep "Paso" simulation.log
 
-### 6. Limpiar Logs Antiguos
+# Últimas 10 colisiones
+grep "colisiones" simulation.log | tail -n 10
 
-```bash
-# Eliminar logs de más de 30 días
-find logs/ -name "*.log" -mtime +30 -delete
-find logs/ -name "*.pid" -mtime +30 -delete
-```
-
-### 7. Notificaciones por Email
-
-Puedes configurar notificaciones cuando termine una simulación:
-
-```bash
-# Al final de run_simulation.jl o en un wrapper
-julia --project=. run_simulation.jl config.toml && \
-  echo "Simulación completada" | mail -s "Simulación terminada" tu@email.com
+# Ver progreso de conservación
+grep "Error relativo" simulation.log
 ```
 
 ---
 
-## Comparación de Métodos
-
-| Método | Facilidad | Flexibilidad | Requiere Instalación | Logs Automáticos | Reconexión Interactiva |
-|--------|-----------|--------------|---------------------|------------------|------------------------|
-| **Script wrapper** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | ❌ No | ✅ Sí | ❌ No |
-| **nohup manual** | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ❌ No | ⚠️ Manual | ❌ No |
-| **screen** | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⚠️ A veces | ⚠️ Manual | ✅ Sí |
-| **tmux** | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⚠️ A veces | ⚠️ Manual | ✅ Sí |
-
-### Recomendaciones
-
-- **Para simulaciones largas desatendidas**: Script wrapper o nohup manual
-- **Para desarrollo/debugging**: tmux o screen
-- **Para múltiples simulaciones simultáneas**: tmux con múltiples paneles
-- **Para máxima simplicidad**: Script wrapper
-
----
-
-## Solución de Problemas
-
-### Problema: El proceso se detuvo al cerrar SSH
-
-**Causa**: No usaste `nohup` o screen/tmux
-
-**Solución**: Siempre usa uno de los métodos descritos arriba.
-
-### Problema: No puedo encontrar el PID
-
-**Solución**:
-```bash
-# Buscar procesos de Julia
-ps aux | grep "julia.*run_simulation"
-
-# Usar check_simulation.sh
-./check_simulation.sh
-```
-
-### Problema: El log no se actualiza
-
-**Posibles causas**:
-1. El proceso se detuvo (verificar con `ps`)
-2. Julia está bufferizando el output
-
-**Solución para buffering**:
-```bash
-# Ejecutar Julia sin buffering
-nohup julia --project=. -e 'ENV["JULIA_DEBUG"]="all"' run_simulation.jl config.toml > logs/sim.log 2>&1 &
-```
-
-### Problema: No tengo suficiente espacio en disco
-
-**Solución**:
-```bash
-# Verificar espacio
-df -h
-
-# Comprimir logs antiguos
-gzip logs/*.log
-
-# Eliminar resultados intermedios si es seguro
-```
-
----
-
-## Ejemplos Completos
+## Ejemplos Prácticos
 
 ### Ejemplo 1: Simulación Simple
 
 ```bash
 # Ejecutar
-./run_simulation_bg.sh config/ultra_precision.toml
+nohup julia --project=. run_simulation.jl config/ultra_precision.toml > ultra.log 2>&1 &
+echo $! > ultra.pid
 
-# Ver progreso
-tail -f logs/simulation_*.log
+# Ver progreso un momento
+tail -f ultra.log
+# Presiona Ctrl+C cuando quieras salir
 
-# Cerrar SSH (Ctrl+D o exit)
+# Cerrar SSH
+exit
 
-# Más tarde, reconectar y verificar
+# Horas/días después, reconectar
 ssh usuario@servidor
 cd Collective-Dynamics
-./check_simulation.sh
+
+# Verificar si sigue corriendo
+ps -p $(cat ultra.pid)
+
+# Ver últimas líneas
+tail -n 50 ultra.log
 ```
 
-### Ejemplo 2: Múltiples Simulaciones
+### Ejemplo 2: Múltiples Simulaciones Simultáneas
 
 ```bash
-# Ejecutar 3 simulaciones diferentes
-./run_simulation_bg.sh config/config1.toml "Simulación 1"
-./run_simulation_bg.sh config/config2.toml "Simulación 2"
-./run_simulation_bg.sh config/config3.toml "Simulación 3"
+# Crear directorio
+mkdir -p logs
 
-# Verificar todas
-./check_simulation.sh
+# Simulación 1
+nohup julia --project=. run_simulation.jl config/config1.toml > logs/sim1.log 2>&1 &
+echo $! > logs/sim1.pid
+
+# Simulación 2
+nohup julia --project=. run_simulation.jl config/config2.toml > logs/sim2.log 2>&1 &
+echo $! > logs/sim2.pid
+
+# Simulación 3
+nohup julia --project=. run_simulation.jl config/config3.toml > logs/sim3.log 2>&1 &
+echo $! > logs/sim3.pid
+
+# Ver todas
+ps aux | grep julia
+
+# Monitorear todas en paralelo (requiere tmux)
+tmux new-session \; \
+  split-window -v \; \
+  split-window -v \; \
+  select-layout even-vertical \; \
+  send-keys -t 0 'tail -f logs/sim1.log' C-m \; \
+  send-keys -t 1 'tail -f logs/sim2.log' C-m \; \
+  send-keys -t 2 'tail -f logs/sim3.log' C-m
 ```
 
-### Ejemplo 3: Con tmux (para monitoreo interactivo)
+### Ejemplo 3: Con Notificación al Terminar
 
 ```bash
-# Crear sesión
-tmux new -s monitoring
+# Ejecutar simulación y enviar email al terminar (requiere mail configurado)
+nohup julia --project=. run_simulation.jl config/ultra_precision.toml > ultra.log 2>&1 && \
+  echo "Simulación completada" | mail -s "Simulación OK" tu@email.com &
 
-# Dividir en 4 paneles (Ctrl+B ", luego Ctrl+B %)
-# Panel 1: Simulación principal
-julia --project=. run_simulation.jl config/ultra_precision.toml
-
-# Panel 2: Monitoreo del log
-tail -f results/simulation_*/conservation.log
-
-# Panel 3: Uso de recursos
-htop
-
-# Panel 4: Espacio en disco
-watch -n 60 'df -h | grep -E "Filesystem|/home"'
-
-# Desconectar: Ctrl+B D
-# Reconectar: tmux attach -t monitoring
+# O escribir un archivo de señal
+nohup julia --project=. run_simulation.jl config/ultra_precision.toml > ultra.log 2>&1 && \
+  touch SIMULACION_COMPLETADA &
 ```
 
 ---
 
-## Recursos Adicionales
+## Solución de Problemas
 
-- [Documentación de nohup](https://man7.org/linux/man-pages/man1/nohup.1.html)
-- [Guía de screen](https://www.gnu.org/software/screen/manual/screen.html)
-- [Guía de tmux](https://github.com/tmux/tmux/wiki)
-- [Señales de Linux](https://man7.org/linux/man-pages/man7/signal.7.html)
+### El proceso se detuvo al cerrar SSH
+
+**Causa:** No usaste `nohup`
+
+**Solución:** Siempre usa `nohup` o screen/tmux
+
+### No puedo encontrar el PID
+
+```bash
+# Buscar todos los procesos de Julia
+ps aux | grep "julia.*run_simulation"
+
+# Encontrarás algo como:
+# usuario  12345  98.5  2.3  ... julia --project=. run_simulation.jl config/...
+```
+
+El segundo número (`12345`) es el PID.
+
+### El log no se actualiza
+
+**Verificar si el proceso está corriendo:**
+```bash
+ps -p 12345
+```
+
+Si no aparece, el proceso se detuvo. Revisa el log para ver el error:
+```bash
+tail -n 100 simulation.log | grep -i error
+```
+
+### Me quedé sin espacio en disco
+
+```bash
+# Verificar espacio
+df -h
+
+# Encontrar archivos grandes
+du -h results/ | sort -h | tail -n 20
+
+# Comprimir logs antiguos
+gzip logs/*.log
+
+# Eliminar resultados antiguos (¡CUIDADO!)
+rm -rf results/simulation_20240101_*
+```
+
+### Julia usa demasiada memoria
+
+```bash
+# Ver uso de memoria
+ps aux | grep julia
+
+# Si es necesario, limitar con ulimit (ejecutar ANTES de la simulación)
+ulimit -v 16000000  # Limitar a ~16GB
+nohup julia --project=. run_simulation.jl config.toml > sim.log 2>&1 &
+```
+
+---
+
+## Mejores Prácticas
+
+### ✅ DO
+
+- **Siempre** usa `nohup` o screen/tmux
+- **Siempre** redirige la salida a un archivo (`> simulation.log 2>&1`)
+- **Guarda el PID** para facilitar el manejo del proceso
+- **Verifica** que el proceso arrancó antes de cerrar SSH
+- **Usa nombres descriptivos** para los logs
+- **Monitorea** el espacio en disco si las simulaciones son largas
+
+### ❌ DON'T
+
+- No ejecutes sin `nohup` y esperes que siga corriendo
+- No olvides el `2>&1` (perderás los errores)
+- No olvides el `&` al final (bloqueará la terminal)
+- No uses nombres genéricos como `output.log` si tienes múltiples simulaciones
+- No llenes el disco (monitorea el espacio disponible)
+
+---
+
+## Comparación de Métodos
+
+| Método | Simplicidad | Flexibilidad | Requiere Instalación | Reconexión Interactiva |
+|--------|-------------|--------------|---------------------|------------------------|
+| **nohup** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | ❌ No | ❌ No |
+| **Scripts helper** | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ❌ No | ❌ No |
+| **screen** | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⚠️ A veces | ✅ Sí |
+| **tmux** | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⚠️ A veces | ✅ Sí |
+
+**Recomendación:**
+- Para la mayoría de casos: **nohup** (método simple)
+- Para múltiples simulaciones frecuentes: **Scripts helper**
+- Para desarrollo/debugging interactivo: **tmux** o **screen**
+
+---
+
+## Resumen de Comandos
+
+```bash
+# EJECUTAR EN BACKGROUND (lo esencial)
+nohup julia --project=. run_simulation.jl config.toml > sim.log 2>&1 &
+echo $! > sim.pid
+
+# VERIFICAR ESTADO
+ps -p $(cat sim.pid)
+
+# MONITOREAR
+tail -f sim.log
+
+# DETENER
+kill $(cat sim.pid)
+
+# BUSCAR ERRORES
+grep -i error sim.log
+
+# VER USO DE RECURSOS
+top -p $(cat sim.pid)
+```
 
 ---
 
