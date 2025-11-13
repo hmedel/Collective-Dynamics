@@ -1,0 +1,45 @@
+# Logs de simulaciones en background
+logs/
+*.log
+*.pid
+
+# Archivos temporales de Julia
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+/deps/deps.jl
+
+# Manifest.toml puede regenerarse
+Manifest.toml
+
+# Resultados de simulaciones (muy grandes)
+# Nota: Descomenta si no quieres subir resultados
+# results/
+
+# Archivos temporales del sistema
+.DS_Store
+*~
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Archivos de Python (si se usan scripts de análisis)
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+
+# Archivos temporales de R (si se usan scripts de análisis)
+.Rhistory
+.RData
+.Rproj.user
+
+# Archivos de visualización temporal
+*.gif
+*.mp4
+*.avi
+# Nota: Descomenta las líneas de arriba si generas muchos videos
+
+# nohup output
+nohup.out
