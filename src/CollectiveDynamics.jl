@@ -70,6 +70,9 @@ include("adaptive_time.jl")
 # Conservación
 include("conservation.jl")
 
+# Paralelización (opcional, requiere Threads)
+include("parallel/collision_detection_parallel.jl")
+
 # ============================================================================
 # Exports - Geometría
 # ============================================================================
@@ -145,7 +148,8 @@ export check_collision,
 # ============================================================================
 
 export time_to_collision,
-       find_next_collision
+       find_next_collision,
+       find_next_collision_parallel
 
 # ============================================================================
 # Exports - Conservación
@@ -268,7 +272,7 @@ function simulate_ellipse(
         t = step * dt
 
         # Paso 1: Mover partículas (integración geodésica)
-        for i in 1:length(particles)
+        @inbounds for i in 1:length(particles)
             p = particles[i]
             θ_new, θ_dot_new = forest_ruth_step_ellipse(p.θ, p.θ_dot, dt, a, b)
             particles[i] = update_particle(p, θ_new, θ_dot_new, a, b)
@@ -345,6 +349,7 @@ export simulate_ellipse
                               collision_method=:parallel_transport,
                               tolerance=1e-6,
                               max_steps=10_000_000,
+                              use_parallel=false,
                               verbose=true)
 
 Simula dinámica de partículas en una elipse usando **tiempos adaptativos**.
@@ -370,6 +375,7 @@ Este es el algoritmo descrito en el artículo:
 - `collision_method`: `:simple`, `:parallel_transport`, o `:geodesic`
 - `tolerance`: Tolerancia para verificar conservación
 - `max_steps`: Número máximo de pasos de integración (seguridad contra loops infinitos)
+- `use_parallel`: Usar detección paralela de colisiones (requiere `julia -t N`, N≥30 recomendado)
 - `verbose`: Imprimir progreso
 
 # Retorna
@@ -407,6 +413,7 @@ function simulate_ellipse_adaptive(
     collision_method::Symbol = :parallel_transport,
     tolerance::T = T(1e-6),
     max_steps::Int = 10_000_000,
+    use_parallel::Bool = false,
     verbose::Bool = true
 ) where {T <: AbstractFloat}
 
@@ -449,11 +456,20 @@ function simulate_ellipse_adaptive(
         step += 1
 
         # Paso 1: Encontrar próxima colisión
-        collision_info = find_next_collision(
-            particles, a, b;
-            max_time = dt_max,
-            min_dt = dt_min
-        )
+        # Usar versión paralela si está habilitada y hay threads disponibles
+        collision_info = if use_parallel && Threads.nthreads() > 1
+            find_next_collision_parallel(
+                particles, a, b;
+                max_time = dt_max,
+                min_dt = dt_min
+            )
+        else
+            find_next_collision(
+                particles, a, b;
+                max_time = dt_max,
+                min_dt = dt_min
+            )
+        end
 
         # Paso de tiempo: mínimo entre próxima colisión y dt_max
         dt = min(collision_info.dt, max_time - t)
@@ -462,7 +478,7 @@ function simulate_ellipse_adaptive(
         push!(dt_history, dt)
 
         # Paso 2: Mover partículas
-        for i in 1:length(particles)
+        @inbounds for i in 1:length(particles)
             p = particles[i]
             θ_new, θ_dot_new = forest_ruth_step_ellipse(p.θ, p.θ_dot, dt, a, b)
             particles[i] = update_particle(p, θ_new, θ_dot_new, a, b)

@@ -135,16 +135,21 @@ function find_next_collision_parallel(
     n_pairs = div(n * (n - 1), 2)
 
     # Para N pequeño, usar versión secuencial (evitar overhead)
-    if n < 20 || nthreads() == 1
+    # Análisis: overhead threading ~100μs, trabajo por par ~0.4μs
+    # Break-even: necesitamos ~250 pares = N≈23 partículas
+    # Usamos N<50 como umbral conservador para asegurar beneficio
+    if n < 50 || nthreads() == 1
         return find_next_collision(particles, a, b; max_time=max_time, min_dt=min_dt)
     end
 
     # Thread-local storage para mínimos
     # Cada thread mantiene su propio candidato a mínimo
-    n_threads = nthreads()
-    t_mins = fill(max_time, n_threads)
-    pairs_mins = [(0, 0) for _ in 1:n_threads]
-    founds = fill(false, n_threads)
+    # IMPORTANTE: Usar maxthreadid() en vez de nthreads() para evitar BoundsError
+    # porque threadid() puede retornar valores > nthreads() con dynamic scheduling
+    max_tid = Threads.maxthreadid()
+    t_mins = fill(max_time, max_tid)
+    pairs_mins = [(0, 0) for _ in 1:max_tid]
+    founds = fill(false, max_tid)
 
     # Paralelizar sobre los pares
     # Threads.@threads usa scheduling estático por default
@@ -153,14 +158,15 @@ function find_next_collision_parallel(
         i, j = linear_to_pair(idx, n)
 
         # Calcular tiempo a colisión para este par
-        t_coll = time_to_collision(
+        # @inbounds seguro aquí: i,j garantizados en 1:n
+        @inbounds t_coll = time_to_collision(
             particles[i], particles[j], a, b;
             max_time = max_time
         )
 
         # Actualizar mínimo thread-local
         tid = threadid()
-        if isfinite(t_coll) && t_coll < t_mins[tid]
+        @inbounds if isfinite(t_coll) && t_coll < t_mins[tid]
             t_mins[tid] = t_coll
             pairs_mins[tid] = (i, j)
             founds[tid] = true
@@ -172,7 +178,7 @@ function find_next_collision_parallel(
     pair_min = (0, 0)
     found = false
 
-    for tid in 1:n_threads
+    for tid in 1:max_tid
         if founds[tid] && t_mins[tid] < t_min
             t_min = t_mins[tid]
             pair_min = pairs_mins[tid]
@@ -222,14 +228,16 @@ function find_next_collision_parallel_dynamic(
     n = length(particles)
     n_pairs = div(n * (n - 1), 2)
 
-    if n < 20 || nthreads() == 1
+    # Para N pequeño, usar versión secuencial (evitar overhead)
+    if n < 50 || nthreads() == 1
         return find_next_collision(particles, a, b; max_time=max_time, min_dt=min_dt)
     end
 
-    n_threads = nthreads()
-    t_mins = fill(max_time, n_threads)
-    pairs_mins = [(0, 0) for _ in 1:n_threads]
-    founds = fill(false, n_threads)
+    # IMPORTANTE: Usar maxthreadid() en vez de nthreads() para evitar BoundsError
+    max_tid = Threads.maxthreadid()
+    t_mins = fill(max_time, max_tid)
+    pairs_mins = [(0, 0) for _ in 1:max_tid]
+    founds = fill(false, max_tid)
 
     # Scheduling dinámico con :dynamic
     @threads :dynamic for idx in 1:n_pairs
@@ -253,7 +261,7 @@ function find_next_collision_parallel_dynamic(
     pair_min = (0, 0)
     found = false
 
-    for tid in 1:n_threads
+    for tid in 1:max_tid
         if founds[tid] && t_mins[tid] < t_min
             t_min = t_mins[tid]
             pair_min = pairs_mins[tid]

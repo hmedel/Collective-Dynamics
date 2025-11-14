@@ -67,7 +67,9 @@ Esto es válido porque dt es pequeño y la aceleración geodésica
     # Calcular separación actual
     θ1, θ2 = p1.θ, p2.θ
     Δθ = abs(θ2 - θ1)
-    Δθ = min(Δθ, 2*T(π) - Δθ)
+    # Optimización: pre-calcular constante
+    TWO_PI = T(2π)
+    Δθ = min(Δθ, TWO_PI - Δθ)
 
     if Δθ < eps(T)
         # Misma posición, retornar Inf para evitar dt → 0
@@ -91,7 +93,8 @@ Esto es válido porque dt es pequeño y la aceleración geodésica
         # Diferencia angular SIGNED con wraparound correcto
         # Normalizar a [-π, π] para obtener el camino más corto
         Δθ_raw = θ2 - θ1
-        Δθ_signed = mod(Δθ_raw + T(π), T(2π)) - T(π)
+        PI = T(π)
+        Δθ_signed = mod(Δθ_raw + PI, TWO_PI) - PI
 
         # Si Δθ_signed > 0: θ2 está adelante (sentido positivo)
         # Si θ_dot_rel > 0: θ2 se mueve más rápido → se alejan

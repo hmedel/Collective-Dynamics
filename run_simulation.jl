@@ -111,6 +111,7 @@ function run_simulation_from_config(config_file::String)
         dt_max = Float64(sim_config["dt_max"])
         dt_min = Float64(sim_config["dt_min"])
         max_steps = haskey(sim_config, "max_steps") ? Int(sim_config["max_steps"]) : 10_000_000
+        use_parallel = haskey(sim_config, "use_parallel") ? Bool(sim_config["use_parallel"]) : false
 
         data = simulate_ellipse_adaptive(
             particles, a, b;
@@ -121,6 +122,7 @@ function run_simulation_from_config(config_file::String)
             collision_method = collision_method,
             tolerance = tolerance,
             max_steps = max_steps,
+            use_parallel = use_parallel,
             verbose = verbose
         )
 

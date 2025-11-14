@@ -45,8 +45,13 @@ function benchmark_collision_detection(n_particles::Int; n_runs::Int=10, warmup:
     Random.seed!(42)
     a, b = 2.0, 1.0
 
+    # Ajustar radio según N para evitar overlap físico
+    # Máximo teórico: perímetro/diámetro ≈ 48 partículas con r=0.05
+    # Reducir radio para N>40
+    radius_fraction = n_particles <= 40 ? 0.05 : 0.03
+
     # Generar partículas
-    particles = generate_random_particles(n_particles, 1.0, 0.05, a, b)
+    particles = generate_random_particles(n_particles, 1.0, radius_fraction, a, b)
 
     println(@sprintf("N = %d partículas (%d pares)", n_particles, div(n_particles*(n_particles-1), 2)))
     println("-"^80)

@@ -1,0 +1,50 @@
+
+[particles.random]
+n_particles = 20
+radius = 0.1
+mass = 1.0
+enabled = true
+theta_dot_min = -2.0
+seed = 1234
+theta_dot_max = 2.0
+
+[particles.from_file]
+filename = "config/particles_custom.csv"
+enabled = false
+[output]
+copy_config = true
+custom_name = "my_simulation"
+save_initial_final = true
+save_trajectories = true
+save_summary = true
+base_dir = "results"
+use_timestamp = true
+save_collision_events = true
+save_conservation = true
+save_csv = true
+save_jld2 = true
+
+[analysis]
+compute_energy_stats = true
+compute_collision_stats = true
+generate_plots = false
+compute_phase_space = false
+
+[geometry]
+b = 1.0
+a = 2.0
+
+[simulation]
+method = "adaptive"
+dt_min = 1.0e-10
+dt_fixed = 1.0e-6
+save_interval = 0.001
+dt_max = 1.0e-6
+verbose = true
+max_time = 10.0
+collision_method = "parallel_transport"
+tolerance = 1.0e-7
+
+[resources]
+n_threads = 1
+use_gpu = false

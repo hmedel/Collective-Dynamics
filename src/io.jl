@@ -79,13 +79,15 @@ function validate_config(config::Dict)
     end
 
     # Partículas
-    if config["particles"]["random"]["enabled"] &&
-       config["particles"]["from_file"]["enabled"]
+    # Compatibilidad: from_file es opcional (configs antiguos pueden no tenerlo)
+    has_random = haskey(config["particles"], "random") && config["particles"]["random"]["enabled"]
+    has_from_file = haskey(config["particles"], "from_file") && config["particles"]["from_file"]["enabled"]
+
+    if has_random && has_from_file
         error("No puedes habilitar 'random' y 'from_file' simultáneamente")
     end
 
-    if !config["particles"]["random"]["enabled"] &&
-       !config["particles"]["from_file"]["enabled"]
+    if !has_random && !has_from_file
         error("Debes habilitar 'random' o 'from_file' en [particles]")
     end
 
@@ -195,7 +197,7 @@ function create_particles_from_config(
             rng = rng
         )
 
-    elseif particles_config["from_file"]["enabled"]
+    elseif haskey(particles_config, "from_file") && particles_config["from_file"]["enabled"]
         # Desde archivo
         filename = particles_config["from_file"]["filename"]
         particles = read_particles_csv(filename, a, b)
