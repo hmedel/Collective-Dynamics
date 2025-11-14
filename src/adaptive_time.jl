@@ -76,11 +76,30 @@ Esto es válido porque dt es pequeño y la aceleración geodésica
         return T(Inf)
     end
 
+    # ========================================================================
+    # BOUNDING BOX FILTERING: Filtro angular rápido
+    # ========================================================================
+    # Si las partículas están muy separadas angularmente, NO PUEDEN colisionar
+    # Calculamos θ_max: máxima separación angular para posible colisión
+    r_sum = p1.radius + p2.radius
+
+    # Aproximación conservadora: usar el eje menor (b) para distancia mínima
+    # θ_max ≈ (r₁ + r₂) / min(a, b)
+    # Multiplicamos por factor de seguridad 1.5 para ser conservadores
+    b_min = min(a, b)
+    θ_max = T(1.5) * r_sum / b_min
+
+    # Si Δθ > θ_max, las partículas están demasiado lejas para colisionar
+    # IMPORTANTE: verificar ambos lados del círculo (Δθ y 2π-Δθ)
+    if Δθ > θ_max && Δθ < TWO_PI - θ_max
+        # Partículas muy separadas angularmente → no colisionarán
+        return T(Inf)
+    end
+    # ========================================================================
+
     θ_mid = (θ1 + θ2) / 2
     g_mid = sqrt(metric_ellipse(θ_mid, a, b))
     current_distance = g_mid * Δθ
-
-    r_sum = p1.radius + p2.radius
 
     # Obtener velocidades (necesarias para el closure más adelante)
     θ_dot1, θ_dot2 = p1.θ_dot, p2.θ_dot
