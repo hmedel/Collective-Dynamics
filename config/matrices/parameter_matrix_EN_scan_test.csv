@@ -1,0 +1,3 @@
+run_id,E_per_N,eccentricity,a_b_ratio,ecc_label,N,phi,radius,v_max,seed,design,status,date_started,date_finished,wall_time_seconds
+1,0.05,0.0,1.0,Circle,40,0.06,0.03872983346207417,0.39528470752104744,1,EN_scan,pending,,,NaN
+2,0.05,0.0,1.0,Circle,40,0.06,0.03872983346207417,0.39528470752104744,2,EN_scan,pending,,,NaN

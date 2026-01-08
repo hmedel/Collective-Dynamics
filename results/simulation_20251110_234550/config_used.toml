@@ -1,0 +1,103 @@
+# ============================================================================
+# CONFIGURACIÓN DE ALTA PRECISIÓN
+# ============================================================================
+# Esta configuración está optimizada para conservación EXCELENTE (error < 1e-6)
+#
+# Comparación con configuración estándar:
+#   dt_max: 1e-5 → 1e-6 (10× más preciso)
+#   tolerance: 1e-6 → 1e-7 (10× más estricto)
+#   Error esperado: ~10,000× mejor
+#   Tiempo de cómputo: ~10× más lento
+#
+# Ejecuta:
+#   julia --project=. run_simulation.jl config/alta_precision.toml
+
+[geometry]
+a = 2.0
+b = 1.0
+
+[simulation]
+method = "adaptive"
+max_time = 10.0             # Tiempo de simulación (ajusta según necesites)
+save_interval = 0.1         # Guardar cada 0.1 segundos
+
+# PARÁMETROS DE ALTA PRECISIÓN
+# -----------------------------
+dt_max = 1.0e-6             # 10× más pequeño → error ~10,000× menor
+dt_min = 1.0e-12            # Más pequeño para colisiones muy cercanas
+tolerance = 1.0e-7          # 10× más estricto en colisiones
+
+# Con estos parámetros:
+#   Pasos estimados: ~10,000,000 para 10 segundos
+#   Conservación esperada: EXCELENTE (error < 1e-6)
+max_steps = 20_000_000      # Suficiente para 10 segundos
+
+collision_method = "parallel_transport"  # Mejor método para conservación
+verbose = true
+
+[particles.random]
+enabled = true
+n_particles = 10            # Ajusta según necesites
+mass = 1.0
+radius = 0.1
+theta_dot_min = -1.0
+theta_dot_max = 1.0
+seed = 42                   # Para reproducibilidad
+
+[particles.from_file]
+enabled = false
+filename = "config/particles_custom.csv"
+
+[output]
+base_dir = "results"
+use_timestamp = true
+save_csv = true
+save_jld2 = false
+save_summary = true
+
+# Guardar datos completos para análisis
+save_trajectories = true
+save_conservation = true
+save_initial_final = true
+save_collision_events = true
+copy_config = true
+
+[analysis]
+compute_energy_stats = true
+compute_collision_stats = true
+compute_phase_space = false
+generate_plots = false
+
+[resources]
+n_threads = 1
+use_gpu = false
+
+# ============================================================================
+# NOTAS IMPORTANTES
+# ============================================================================
+#
+# 1. CONSERVACIÓN ESPERADA:
+#    - Energía: error < 1e-8 (excelente)
+#    - Momento conjugado: error < 1e-8 (excelente)
+#
+# 2. TIEMPO DE CÓMPUTO:
+#    Con 10 partículas y 10 segundos de simulación:
+#      - Pasos estimados: ~10,000,000
+#      - Tiempo de ejecución: ~15-30 minutos (depende de colisiones)
+#
+# 3. MEMORIA Y DISCO:
+#    - Memoria RAM: ~500 MB - 1 GB
+#    - Espacio en disco: ~500 MB para trayectorias completas
+#
+# 4. CUANDO USAR ESTA CONFIGURACIÓN:
+#    ✅ Simulaciones científicas que requieren alta precisión
+#    ✅ Publicaciones y papers
+#    ✅ Verificación de teoría
+#    ✅ Benchmarks de conservación
+#
+# 5. CUANDO NO USAR:
+#    ❌ Pruebas rápidas (usa dt_max = 1e-5)
+#    ❌ Exploración de parámetros (usa dt_max = 1e-5)
+#    ❌ Muchas partículas (>50) (usa método "fixed")
+#
+# ============================================================================

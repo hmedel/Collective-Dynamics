@@ -204,7 +204,7 @@ using LinearAlgebra
 
         @test length(data.times) == 2
         @test length(data.energies) == 2
-        @test length(data.momenta) == 2
+        @test length(data.conjugate_momenta) == 2
     end
 
     # ========================================================================

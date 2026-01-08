@@ -1,0 +1,6 @@
+run_id,N,e,a,b,E_per_N,radius,seed,t_max,save_interval,method,collision_method,use_parallel
+1,40,0.0,2.0,1.0,0.32,0.05,1,120.0,0.5,adaptive,parallel_transport,true
+50,40,0.8,2.0,1.0,0.32,0.05,10,120.0,0.5,adaptive,parallel_transport,true
+180,60,0.99,2.0,1.0,0.32,0.05,10,120.0,0.5,adaptive,parallel_transport,true
+360,100,0.99,2.0,1.0,0.32,0.05,10,120.0,0.5,adaptive,parallel_transport,true
+445,120,0.99,2.0,1.0,0.32,0.05,5,120.0,0.5,adaptive,parallel_transport,true

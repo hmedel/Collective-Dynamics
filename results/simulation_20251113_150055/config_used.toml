@@ -1,0 +1,107 @@
+# ============================================================================
+# Configuración de Prueba: Parámetro max_steps
+# ============================================================================
+# Este archivo demuestra cómo usar el parámetro max_steps para controlar
+# el número máximo de iteraciones en simulaciones largas.
+#
+# Ejecuta:
+#   julia --project=. run_simulation.jl config/test_max_steps.toml
+
+[geometry]
+a = 2.0
+b = 1.0
+
+[simulation]
+method = "adaptive"
+max_time = 1.0            # 1 segundo de simulación
+save_interval = 0.1       # Guardar cada 0.1 s
+dt_max = 1.0e-5           # dt máximo
+dt_min = 1.0e-10          # dt mínimo
+
+# PARÁMETRO NUEVO: max_steps
+# ---------------------------
+# Controla el número máximo de pasos de integración
+# Por defecto: 10,000,000 (10 millones)
+#
+# Para este ejemplo:
+#   Pasos estimados = max_time / dt_max = 1.0 / 1e-5 = 100,000
+#   Usamos 200,000 con margen de seguridad (2×)
+max_steps = 200_000
+
+collision_method = "parallel_transport"
+tolerance = 1.0e-6
+verbose = true
+
+[particles.random]
+enabled = true
+n_particles = 5
+mass = 1.0
+radius = 0.1
+theta_dot_min = -1.0
+theta_dot_max = 1.0
+seed = 42
+
+[output]
+base_dir = "results"
+use_timestamp = true
+save_csv = true
+save_jld2 = false
+save_summary = true
+save_trajectories = true
+save_conservation = true
+save_initial_final = true
+save_collision_events = true
+copy_config = true
+
+[analysis]
+compute_energy_stats = true
+compute_collision_stats = true
+compute_phase_space = false
+generate_plots = false
+
+[resources]
+n_threads = 1
+use_gpu = false
+
+# ============================================================================
+# NOTAS DE USO
+# ============================================================================
+#
+# 1. CÁLCULO DE max_steps APROPIADO:
+#
+#    Fórmula básica:
+#      max_steps ≈ (max_time / dt_max) × factor_seguridad
+#
+#    donde factor_seguridad = 1.5 a 2.0 típicamente
+#
+# 2. EJEMPLOS:
+#
+#    Simulación corta (1 segundo, dt_max=1e-5):
+#      max_steps = 1.0 / 1e-5 × 2 = 200,000
+#
+#    Simulación larga (100 segundos, dt_max=1e-5):
+#      max_steps = 100.0 / 1e-5 × 1.5 = 15,000,000
+#
+#    Alta precisión (10 segundos, dt_max=1e-6):
+#      max_steps = 10.0 / 1e-6 × 1.5 = 15,000,000
+#
+# 3. WARNINGS:
+#
+#    Si ves "Alcanzado límite de pasos (X). Deteniendo simulación":
+#      - La simulación necesita más pasos de los permitidos
+#      - Opciones:
+#        a) Aumentar max_steps en este archivo
+#        b) Aumentar dt_max (menos precisión pero más rápido)
+#        c) Reducir max_time
+#
+# 4. PERFORMANCE:
+#
+#    Más pasos = más tiempo de cómputo
+#    - 100,000 pasos: ~1-2 segundos
+#    - 1,000,000 pasos: ~10-20 segundos
+#    - 10,000,000 pasos: ~2-3 minutos
+#    - 100,000,000 pasos: ~20-30 minutos
+#
+#    (tiempos aproximados en CPU moderna, 5 partículas)
+#
+# ============================================================================

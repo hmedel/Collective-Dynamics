@@ -65,23 +65,44 @@ Esto es válido porque dt es pequeño y la aceleración geodésica
 ) where {T <: AbstractFloat}
 
     # Calcular separación actual
-    θ1, θ2 = p1.θ, p2.θ
-    Δθ = abs(θ2 - θ1)
-    Δθ = min(Δθ, 2*T(π) - Δθ)
+    φ1, φ2 = p1.φ, p2.φ
+    Δθ = abs(φ2 - φ1)
+    # Optimización: pre-calcular constante
+    TWO_PI = T(2π)
+    Δθ = min(Δθ, TWO_PI - Δθ)
 
     if Δθ < eps(T)
         # Misma posición, retornar Inf para evitar dt → 0
         return T(Inf)
     end
 
-    θ_mid = (θ1 + θ2) / 2
+    # ========================================================================
+    # BOUNDING BOX FILTERING: Filtro angular rápido
+    # ========================================================================
+    # Si las partículas están muy separadas angularmente, NO PUEDEN colisionar
+    # Calculamos θ_max: máxima separación angular para posible colisión
+    r_sum = p1.radius + p2.radius
+
+    # Aproximación conservadora: usar el eje menor (b) para distancia mínima
+    # θ_max ≈ (r₁ + r₂) / min(a, b)
+    # Multiplicamos por factor de seguridad 1.5 para ser conservadores
+    b_min = min(a, b)
+    θ_max = T(1.5) * r_sum / b_min
+
+    # Si Δθ > θ_max, las partículas están demasiado lejas para colisionar
+    # IMPORTANTE: verificar ambos lados del círculo (Δθ y 2π-Δθ)
+    if Δθ > θ_max && Δθ < TWO_PI - θ_max
+        # Partículas muy separadas angularmente → no colisionarán
+        return T(Inf)
+    end
+    # ========================================================================
+
+    θ_mid = (φ1 + φ2) / 2
     g_mid = sqrt(metric_ellipse(θ_mid, a, b))
     current_distance = g_mid * Δθ
 
-    r_sum = p1.radius + p2.radius
-
     # Obtener velocidades (necesarias para el closure más adelante)
-    θ_dot1, θ_dot2 = p1.θ_dot, p2.θ_dot
+    θ_dot1, θ_dot2 = p1.φ_dot, p2.φ_dot
 
     # Si ya están en contacto o muy cerca, verificar si se están separando
     if current_distance <= 1.2 * r_sum  # 20% de margen
@@ -90,11 +111,12 @@ Esto es válido porque dt es pequeño y la aceleración geodésica
 
         # Diferencia angular SIGNED con wraparound correcto
         # Normalizar a [-π, π] para obtener el camino más corto
-        Δθ_raw = θ2 - θ1
-        Δθ_signed = mod(Δθ_raw + T(π), T(2π)) - T(π)
+        Δθ_raw = φ2 - φ1
+        PI = T(π)
+        Δθ_signed = mod(Δθ_raw + PI, TWO_PI) - PI
 
-        # Si Δθ_signed > 0: θ2 está adelante (sentido positivo)
-        # Si θ_dot_rel > 0: θ2 se mueve más rápido → se alejan
+        # Si Δθ_signed > 0: φ2 está adelante (sentido positivo)
+        # Si θ_dot_rel > 0: φ2 se mueve más rápido → se alejan
         if Δθ_signed * θ_dot_rel > zero(T)
             # Se están alejando
             return T(Inf)
@@ -115,15 +137,15 @@ Esto es válido porque dt es pequeño y la aceleración geodésica
     function separation_at_time(t::T)
         # Posiciones aproximadas (velocidades constantes)
         # Normalizar ángulos a [0, 2π] para evitar overflow numérico
-        θ1_t = mod(θ1 + θ_dot1 * t, T(2π))
-        θ2_t = mod(θ2 + θ_dot2 * t, T(2π))
+        φ1_t = mod(φ1 + θ_dot1 * t, T(2π))
+        φ2_t = mod(φ2 + θ_dot2 * t, T(2π))
 
         # Diferencia angular (tomando camino más corto)
-        Δθ = abs(θ2_t - θ1_t)
+        Δθ = abs(φ2_t - φ1_t)
         Δθ = min(Δθ, T(2π) - Δθ)
 
         # Distancia geodésica aproximada
-        θ_mid = (θ1_t + θ2_t) / 2
+        θ_mid = (φ1_t + φ2_t) / 2
         g_mid = sqrt(metric_ellipse(θ_mid, a, b))
         d_geo = g_mid * Δθ
 
@@ -261,9 +283,9 @@ end
 
 if !@isdefined(check_collision)
     function check_collision(p1::Particle{T}, p2::Particle{T}, a::T, b::T) where {T <: AbstractFloat}
-        Δθ = abs(p1.θ - p2.θ)
+        Δθ = abs(p1.φ - p2.φ)
         Δθ = min(Δθ, 2*T(π) - Δθ)
-        θ_mid = (p1.θ + p2.θ) / 2
+        θ_mid = (p1.φ + p2.φ) / 2
         g_mid = sqrt(metric_ellipse(θ_mid, a, b))
         arc_length = g_mid * Δθ
         return arc_length <= (p1.radius + p2.radius)

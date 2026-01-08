@@ -1,0 +1,110 @@
+# ============================================================================
+# Archivo de Configuración para Simulación de Dinámica Colectiva
+# ============================================================================
+# Este archivo especifica todos los parámetros para una simulación.
+# Modifica los valores según tus necesidades y ejecuta:
+#   julia --project=. run_simulation.jl config/simulation_example.toml
+
+# ============================================================================
+# GEOMETRÍA
+# ============================================================================
+[geometry]
+a = 2.0  # Semi-eje mayor de la elipse
+b = 1.0  # Semi-eje menor de la elipse
+
+# ============================================================================
+# MÉTODO DE SIMULACIÓN
+# ============================================================================
+[simulation]
+method = "adaptive"  # "adaptive" o "fixed"
+max_time = 10.0       # Tiempo total de simulación
+save_interval = 0.001 # Intervalo para guardar estados
+
+# Parámetros para método adaptativo
+dt_max = 1.0e-5      # Paso de tiempo máximo (solo adaptativo)
+dt_min = 1.0e-10     # Paso de tiempo mínimo (solo adaptativo)
+max_steps = 10_000_000  # Número máximo de pasos de integración (seguridad, solo adaptativo)
+
+# Parámetros para método de dt fijo
+dt_fixed = 1.0e-6    # Paso de tiempo fijo (solo método "fixed")
+
+# Método de resolución de colisiones
+collision_method = "parallel_transport"  # "simple", "parallel_transport", "geodesic"
+tolerance = 1.0e-6   # Tolerancia para conservación de energía
+
+verbose = true       # Mostrar progreso durante simulación
+
+# ============================================================================
+# PARTÍCULAS - Generación Aleatoria
+# ============================================================================
+# Opción 1: Generar partículas aleatorias
+[particles.random]
+enabled = true       # Usar generación aleatoria
+n_particles = 30     # Número de partículas
+mass = 1.0           # Masa de cada partícula
+radius = 0.1         # Radio como fracción del semi-eje menor
+
+# Rango de velocidades angulares (rad/s)
+theta_dot_min = -2.0
+theta_dot_max = 2.0
+
+seed = 1234          # Semilla para reproducibilidad (opcional)
+
+# ============================================================================
+# PARTÍCULAS - Desde Archivo
+# ============================================================================
+# Opción 2: Leer partículas desde archivo CSV
+# (Si enabled = true, se usa esto en lugar de random)
+[particles.from_file]
+enabled = false
+filename = "config/particles_custom.csv"
+# El archivo debe tener columnas: id,mass,radius,theta,theta_dot
+
+# ============================================================================
+# SALIDA DE RESULTADOS
+# ============================================================================
+[output]
+# Directorio base para resultados
+base_dir = "results"
+
+# Crear subdirectorio con timestamp
+use_timestamp = true  # results/simulation_20250106_143022/
+
+# Nombre personalizado (opcional, solo si use_timestamp = false)
+custom_name = "my_simulation"
+
+# Formatos de salida
+save_csv = true       # Guardar en CSV
+save_jld2 = true      # Guardar en JLD2 (formato Julia binario)
+save_summary = true   # Guardar resumen en texto
+
+# Qué datos guardar
+save_trajectories = true        # Trayectorias completas (incluye energía individual)
+save_conservation = true        # Datos de conservación (energía y momento totales)
+save_initial_final = true       # Solo estados inicial y final
+save_collision_events = true    # Información de colisiones por paso de tiempo
+
+# Incluir copia de esta configuración en resultados
+copy_config = true
+
+# ============================================================================
+# ANÁLISIS
+# ============================================================================
+[analysis]
+# Realizar análisis automáticos después de simulación
+compute_energy_stats = true
+compute_collision_stats = true
+compute_phase_space = false  # Análisis de espacio de fases (más lento)
+
+# Generar gráficas (requiere Plots.jl o Makie.jl)
+generate_plots = false
+
+# ============================================================================
+# RECURSOS COMPUTACIONALES
+# ============================================================================
+[resources]
+# Número de threads (para futuras versiones paralelas)
+n_threads = 1
+
+# Usar GPU (para futuras versiones CUDA)
+use_gpu = false

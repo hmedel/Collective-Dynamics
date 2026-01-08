@@ -1,0 +1,31 @@
+======================================================================
+RESUMEN DE SIMULACIÓN
+======================================================================
+
+Fecha: 2025-11-07 14:51:49
+
+CONFIGURACIÓN:
+  Geometría: a = 2.0, b = 1.0
+  Método: adaptive
+  Tiempo simulado: 9.990003205718489 unidades
+  Partículas: 20
+
+RESULTADOS:
+  Pasos de tiempo: 1000
+  Colisiones totales: 699
+
+CONSERVACIÓN DE ENERGÍA:
+  Energía inicial:  3.0159535316e+01
+  Energía final:    3.0154697173e+01
+  Error máximo:     1.605375e-04
+  Drift relativo:   -1.604184e-04
+
+  ⚠️  ACEPTABLE: Error < 1e-2
+
+ESTADÍSTICAS DE PASO DE TIEMPO (ADAPTATIVO):
+  dt promedio:     9.996623e-06
+  dt mínimo:       3.771264e-08
+  dt máximo:       1.000000e-05
+  Valores únicos:  700
+
+======================================================================

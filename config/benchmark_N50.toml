@@ -1,0 +1,68 @@
+# ============================================================================
+# Config de Benchmark - N=50 partículas (umbral de paralelización)
+# ============================================================================
+# Speedup esperado con 16-24 threads: ~2.7x
+# Ejecutar:
+#   Secuencial: julia --project=. run_simulation.jl config/benchmark_N50.toml
+#   Paralelo:   julia -t 24 --project=. run_simulation.jl config/benchmark_N50.toml
+# (cambiar use_parallel = true/false para comparar)
+
+[geometry]
+a = 2.0  # Semi-eje mayor
+b = 1.0  # Semi-eje menor
+
+[simulation]
+method = "adaptive"
+max_time = 0.5           # Tiempo moderado para benchmark rápido
+save_interval = 0.01
+
+dt_max = 1.0e-5
+dt_min = 1.0e-10
+max_steps = 50_000_000
+
+collision_method = "parallel_transport"
+tolerance = 1.0e-6
+
+# CAMBIAR ESTO para benchmark secuencial vs paralelo
+use_parallel = false     # true para paralelo, false para secuencial
+
+verbose = true
+
+[particles.random]
+enabled = true
+n_particles = 50         # N=50: umbral mínimo de paralelización
+mass = 1.0
+radius = 0.05            # 5% del semi-eje menor
+
+theta_dot_min = -1.0
+theta_dot_max = 1.0
+
+seed = 42                # Reproducibilidad
+
+[particles.from_file]
+enabled = false
+
+[output]
+base_dir = "results"
+use_timestamp = true
+
+save_csv = true
+save_jld2 = false        # Desactivar para benchmark más rápido
+save_summary = true
+
+save_trajectories = true
+save_conservation = true
+save_initial_final = true
+save_collision_events = true
+
+copy_config = true
+
+[analysis]
+compute_energy_stats = true
+compute_collision_stats = true
+compute_phase_space = false
+generate_plots = false
+
+[resources]
+n_threads = 1
+use_gpu = false

@@ -32,6 +32,11 @@ dt_fixed = 1.0e-5    # Paso de tiempo fijo (solo método "fixed")
 collision_method = "parallel_transport"  # "simple", "parallel_transport", "geodesic"
 tolerance = 1.0e-6   # Tolerancia para conservación de energía
 
+# Paralelización (requiere ejecutar con: julia -t N --project=. run_simulation.jl config.toml)
+# IMPORTANTE: Solo habilitar si n_particles ≥ 50 (overhead domina para N<50)
+# Speedups medidos (16 threads): N=50→2.7x, N=70→5-8x, N=100→10-12x
+use_parallel = false  # true para usar detección paralela de colisiones
+
 verbose = true       # Mostrar progreso durante simulación
 
 # ============================================================================

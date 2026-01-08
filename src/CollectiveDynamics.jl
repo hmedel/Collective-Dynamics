@@ -52,46 +52,143 @@ using ForwardDiff
 # Includes
 # ============================================================================
 
-# Geometría diferencial
-include("geometry/metrics.jl")
-include("geometry/christoffel.jl")
-include("geometry/parallel_transport.jl")
+# NOTA: Migrado a parametrización POLAR VERDADERA
+# La parametrización paramétrica anterior (particles.jl, metrics.jl)
+# usaba ángulo excéntrico θ y métrica g_θθ = a²sin²θ + b²cos²θ
+#
+# La parametrización polar verdadera usa:
+#   r(φ) = ab/√(a²sin²φ + b²cos²φ)
+#   g_φφ = r² + (dr/dφ)²
+#
+# Esta es la parametrización física correcta donde el momento conjugado
+# p_φ = m·g·φ̇ se conserva, y produce φ̇ ∝ 1/g (lento donde r grande).
 
-# Integradores
-include("integrators/forest_ruth.jl")
+# Geometría diferencial (POLAR)
+include("geometry/metrics_polar.jl")
+include("geometry/christoffel_polar.jl")
+include("geometry/parallel_transport.jl")  # Compatible con ambas parametrizaciones
 
-# Partículas y colisiones
-include("particles.jl")
-include("collisions.jl")
+# Integradores (POLAR)
+include("integrators/forest_ruth_polar.jl")
 
-# Tiempos adaptativos
+# Partículas (POLAR)
+include("particles_polar.jl")
+
+# ============================================================================
+# Crear aliases ANTES de incluir archivos que los usan
+# Esto permite que scripts antiguos y archivos dependientes sigan funcionando
+# ============================================================================
+const Particle = ParticlePolar
+const update_particle = update_particle_polar
+const forest_ruth_step_ellipse = forest_ruth_step_polar
+const metric_ellipse = metric_ellipse_polar
+const christoffel_ellipse = christoffel_ellipse_polar
+const generate_random_particles = generate_random_particles_polar
+const cartesian_from_angle = cartesian_from_polar_angle
+const velocity_from_angular = velocity_from_polar_angular
+const kinetic_energy_angular = kinetic_energy_polar
+# Collision functions (will be defined after collisions_polar.jl is included)
+# These are forward declarations - actual assignments happen after include
+
+# Colisiones (POLAR) - incluir después de aliases
+include("collisions_polar.jl")
+
+# ============================================================================
+# Wrapper functions for collision API compatibility
+# ============================================================================
+# The polar collision functions use a different signature than expected by
+# simulate_ellipse_adaptive. Create wrappers to match the expected API.
+
+"""
+    resolve_collision_parallel_transport(p1, p2, a, b; tolerance)
+
+Wrapper for `resolve_collision_polar` with method=:parallel_transport.
+Returns (p1_new, p2_new, conserved) to match expected API.
+"""
+function resolve_collision_parallel_transport(
+    p1::ParticlePolar{T},
+    p2::ParticlePolar{T},
+    a::T,
+    b::T;
+    tolerance::T = T(1e-12)
+) where {T <: AbstractFloat}
+    p1_new, p2_new = resolve_collision_polar(p1, p2, a, b; method=:parallel_transport)
+    return (p1_new, p2_new, true)  # conserved=true for elastic collisions
+end
+
+"""
+    resolve_collision_simple(p1, p2, a, b)
+
+Wrapper for `resolve_collision_simple_polar`.
+Returns (p1_new, p2_new) to match expected API.
+"""
+function resolve_collision_simple(
+    p1::ParticlePolar{T},
+    p2::ParticlePolar{T},
+    a::T,
+    b::T
+) where {T <: AbstractFloat}
+    return resolve_collision_simple_polar(p1, p2, a, b)
+end
+
+"""
+    resolve_collision_geodesic(p1, p2, dt, a, b; tolerance)
+
+Placeholder for geodesic collision method (not yet implemented in polar version).
+Currently delegates to parallel_transport method.
+"""
+function resolve_collision_geodesic(
+    p1::ParticlePolar{T},
+    p2::ParticlePolar{T},
+    dt::T,
+    a::T,
+    b::T;
+    tolerance::T = T(1e-12)
+) where {T <: AbstractFloat}
+    # Geodesic method not yet implemented for polar, use parallel_transport
+    p1_new, p2_new = resolve_collision_polar(p1, p2, a, b; method=:parallel_transport)
+    return (p1_new, p2_new, true)
+end
+
+# Tiempos adaptativos - incluir después de aliases
 include("adaptive_time.jl")
 
-# Conservación
+# Conservación - incluir después de aliases
 include("conservation.jl")
 
+# Projection methods - incluir después de aliases
+include("projection_methods.jl")
+
+# Paralelización - incluir después de aliases
+include("parallel/collision_detection_parallel.jl")
+
 # ============================================================================
-# Exports - Geometría
+# Exports - Geometría (POLAR)
 # ============================================================================
 
-# Métricas
-export metric_ellipse,
-       metric_ellipse_tensor,
-       inverse_metric_ellipse,
-       metric_derivative_ellipse,
-       cartesian_from_angle,
-       velocity_from_angular,
-       arc_length_ellipse,
-       kinetic_energy_angular,
-       kinetic_energy_cartesian
+# Métricas polares
+export radial_ellipse,
+       radial_derivative_ellipse,
+       metric_ellipse_polar,
+       inverse_metric_ellipse_polar,
+       metric_derivative_polar,
+       cartesian_from_polar_angle,
+       velocity_from_polar_angular,
+       kinetic_energy_polar,
+       curvature_ellipse_polar,
+       polar_angle_from_eccentric,
+       eccentric_angle_from_polar
 
-# Christoffel
-export christoffel_ellipse,
-       christoffel_ellipse_alt,
-       christoffel_numerical,
-       christoffel_autodiff,
-       geodesic_acceleration,
-       compare_christoffel_methods
+# Christoffel (polar)
+export christoffel_ellipse_polar,
+       geodesic_acceleration_polar
+
+# Aliases para compatibilidad
+export metric_ellipse,         # = metric_ellipse_polar
+       christoffel_ellipse,    # = christoffel_ellipse_polar
+       cartesian_from_angle,   # = cartesian_from_polar_angle
+       velocity_from_angular,  # = velocity_from_polar_angular
+       kinetic_energy_angular  # = kinetic_energy_polar
 
 # Transporte paralelo
 export parallel_transport_velocity,
@@ -114,19 +211,20 @@ export ForestRuthCoefficients,
        verify_symplecticity
 
 # ============================================================================
-# Exports - Partículas
+# Exports - Partículas (POLAR)
 # ============================================================================
 
-export Particle,
-       update_particle,
+export ParticlePolar,
+       update_particle_polar,
+       generate_random_particles_polar,
+       particle_eccentric_to_polar,
        kinetic_energy,
-       kinetic_energy_cartesian,
        conjugate_momentum,
        angular_momentum,  # Alias deprecado de conjugate_momentum
-       initialize_particle,
-       generate_random_particles,
-       total_energy,
-       center_of_mass
+       # Aliases para compatibilidad
+       Particle,            # = ParticlePolar
+       update_particle,     # = update_particle_polar
+       generate_random_particles  # = generate_random_particles_polar
 
 # ============================================================================
 # Exports - Colisiones
@@ -145,7 +243,8 @@ export check_collision,
 # ============================================================================
 
 export time_to_collision,
-       find_next_collision
+       find_next_collision,
+       find_next_collision_parallel
 
 # ============================================================================
 # Exports - Conservación
@@ -159,7 +258,12 @@ export ConservationData,
        print_conservation_summary,
        verify_collision_conservation,
        get_energy_data,
-       get_momentum_data
+       get_momentum_data,
+       # Projection methods
+       project_energy!,
+       project_momentum!,
+       project_both!,
+       compute_conservation_errors
 
 # ============================================================================
 # High-Level Simulation Functions
@@ -268,10 +372,10 @@ function simulate_ellipse(
         t = step * dt
 
         # Paso 1: Mover partículas (integración geodésica)
-        for i in 1:length(particles)
+        @inbounds for i in 1:length(particles)
             p = particles[i]
-            θ_new, θ_dot_new = forest_ruth_step_ellipse(p.θ, p.θ_dot, dt, a, b)
-            particles[i] = update_particle(p, θ_new, θ_dot_new, a, b)
+            φ_new, φ_dot_new = forest_ruth_step_ellipse(p.φ, p.φ_dot, dt, a, b)
+            particles[i] = update_particle(p, φ_new, φ_dot_new, a, b)
         end
 
         # Paso 2: Resolver colisiones
@@ -345,6 +449,7 @@ export simulate_ellipse
                               collision_method=:parallel_transport,
                               tolerance=1e-6,
                               max_steps=10_000_000,
+                              use_parallel=false,
                               verbose=true)
 
 Simula dinámica de partículas en una elipse usando **tiempos adaptativos**.
@@ -370,6 +475,7 @@ Este es el algoritmo descrito en el artículo:
 - `collision_method`: `:simple`, `:parallel_transport`, o `:geodesic`
 - `tolerance`: Tolerancia para verificar conservación
 - `max_steps`: Número máximo de pasos de integración (seguridad contra loops infinitos)
+- `use_parallel`: Usar detección paralela de colisiones (requiere `julia -t N`, N≥30 recomendado)
 - `verbose`: Imprimir progreso
 
 # Retorna
@@ -407,25 +513,46 @@ function simulate_ellipse_adaptive(
     collision_method::Symbol = :parallel_transport,
     tolerance::T = T(1e-6),
     max_steps::Int = 10_000_000,
+    use_parallel::Bool = false,
+    use_projection::Bool = false,
+    projection_interval::Int = 100,
+    projection_tolerance::T = T(1e-12),
     verbose::Bool = true
 ) where {T <: AbstractFloat}
 
     # Copiar partículas para no modificar el input
     particles = copy(particles_initial)
 
-    # Inicializar estructuras de datos
-    particles_history = Vector{Vector{Particle{T}}}()
-    times_saved = Vector{T}()
-    n_collisions_vec = Vector{Int}()
-    conserved_fractions_vec = Vector{T}()
-    dt_history = Vector{T}()  # Historial de pasos de tiempo usados
+    # Inicializar estructuras de datos con PREALLOCACIÓN
+    # Estimar número de saves basado en save_interval
+    expected_saves = ceil(Int, max_time / save_interval) + 100  # +100 buffer
+    expected_steps = ceil(Int, max_time / dt_max) * 2 + 10000  # Estimación conservadora (2x por colisiones)
+
+    particles_history = Vector{Vector{Particle{T}}}(undef, expected_saves)
+    times_saved = Vector{T}(undef, expected_saves)
+    n_collisions_vec = Vector{Int}(undef, expected_steps)
+    conserved_fractions_vec = Vector{T}(undef, expected_steps)
+    dt_history = Vector{T}(undef, expected_steps)
 
     conservation_data = ConservationData{T}()
 
-    # Guardar estado inicial
-    push!(particles_history, copy(particles))
-    push!(times_saved, zero(T))
+    # Guardar estado inicial (usar índice en lugar de push!)
+    save_idx = 1
+    step_idx = 0
+    particles_history[save_idx] = copy(particles)
+    times_saved[save_idx] = zero(T)
     record_conservation!(conservation_data, particles, zero(T), a, b)
+    save_idx += 1
+
+    # Guardar energía y momento iniciales para projection
+    E0 = zero(T)
+    P0 = zero(T)
+    if use_projection
+        @inbounds for p in particles
+            E0 += kinetic_energy_angular(p.φ, p.φ_dot, p.mass, a, b)
+            P0 += conjugate_momentum(p, a, b)
+        end
+    end
 
     t = zero(T)
     t_next_save = save_interval
@@ -441,31 +568,52 @@ function simulate_ellipse_adaptive(
         println("dt_min:            ", dt_min)
         println("Método colisión:   ", collision_method)
         println("Semi-ejes (a, b):  ($a, $b)")
+        if use_projection
+            println("Projection:        Activado (cada $projection_interval pasos)")
+            println("Tolerancia proj:   ", projection_tolerance)
+        end
         println("=" ^ 70)
     end
 
     # Loop principal de simulación
     while t < max_time
         step += 1
+        step_idx += 1
+
+        # Verificar si necesitamos expandir arrays (raro, pero posible)
+        if step_idx > length(dt_history)
+            resize!(dt_history, step_idx + 1000)
+            resize!(n_collisions_vec, step_idx + 1000)
+            resize!(conserved_fractions_vec, step_idx + 1000)
+        end
 
         # Paso 1: Encontrar próxima colisión
-        collision_info = find_next_collision(
-            particles, a, b;
-            max_time = dt_max,
-            min_dt = dt_min
-        )
+        # Usar versión paralela si está habilitada y hay threads disponibles
+        collision_info = if use_parallel && Threads.nthreads() > 1
+            find_next_collision_parallel(
+                particles, a, b;
+                max_time = dt_max,
+                min_dt = dt_min
+            )
+        else
+            find_next_collision(
+                particles, a, b;
+                max_time = dt_max,
+                min_dt = dt_min
+            )
+        end
 
         # Paso de tiempo: mínimo entre próxima colisión y dt_max
         dt = min(collision_info.dt, max_time - t)
 
-        # Guardar dt usado
-        push!(dt_history, dt)
+        # Guardar dt usado (usar índice en lugar de push!)
+        dt_history[step_idx] = dt
 
         # Paso 2: Mover partículas
-        for i in 1:length(particles)
+        @inbounds for i in 1:length(particles)
             p = particles[i]
-            θ_new, θ_dot_new = forest_ruth_step_ellipse(p.θ, p.θ_dot, dt, a, b)
-            particles[i] = update_particle(p, θ_new, θ_dot_new, a, b)
+            φ_new, φ_dot_new = forest_ruth_step_ellipse(p.φ, p.φ_dot, dt, a, b)
+            particles[i] = update_particle(p, φ_new, φ_dot_new, a, b)
         end
 
         t += dt
@@ -503,22 +651,39 @@ function simulate_ellipse_adaptive(
             conserved_frac = conserved ? one(T) : zero(T)
         end
 
-        push!(n_collisions_vec, n_coll)
-        push!(conserved_fractions_vec, conserved_frac)
+        # Guardar colisiones (usar índice en lugar de push!)
+        n_collisions_vec[step_idx] = n_coll
+        conserved_fractions_vec[step_idx] = conserved_frac
+
+        # Paso 3.5: Aplicar projection si está habilitado
+        if use_projection && (step % projection_interval == 0)
+            project_both!(particles, E0, P0, a, b;
+                         tolerance=projection_tolerance,
+                         max_iter=10)
+        end
 
         # Paso 4: Guardar datos si es tiempo
         if t >= t_next_save || abs(t - max_time) < eps(T)
-            push!(particles_history, copy(particles))
-            push!(times_saved, t)
+            # Verificar si necesitamos expandir array de saves
+            if save_idx > length(particles_history)
+                resize!(particles_history, save_idx + 100)
+                resize!(times_saved, save_idx + 100)
+            end
+
+            particles_history[save_idx] = copy(particles)
+            times_saved[save_idx] = t
             record_conservation!(conservation_data, particles, t, a, b)
             t_next_save += save_interval
 
-            if verbose && (length(times_saved) % 10 == 0)
+            if verbose && (save_idx % 10 == 0)
                 progress = 100 * t / max_time
-                avg_dt = mean(dt_history[max(1, end-99):end])
+                avg_dt = mean(@view dt_history[max(1, step_idx-99):step_idx])
+                total_collisions = sum(@view n_collisions_vec[1:step_idx])
                 println(@sprintf("Progreso: %.1f%% | t = %.6f | dt_avg = %.2e | Colisiones totales: %d",
-                        progress, t, avg_dt, sum(n_collisions_vec)))
+                        progress, t, avg_dt, total_collisions))
             end
+
+            save_idx += 1
         end
 
         # Seguridad: evitar loops infinitos
@@ -527,6 +692,13 @@ function simulate_ellipse_adaptive(
             break
         end
     end
+
+    # Truncar arrays al tamaño real (eliminar elementos no usados)
+    resize!(particles_history, save_idx - 1)
+    resize!(times_saved, save_idx - 1)
+    resize!(dt_history, step_idx)
+    resize!(n_collisions_vec, step_idx)
+    resize!(conserved_fractions_vec, step_idx)
 
     if verbose
         println("=" ^ 70)

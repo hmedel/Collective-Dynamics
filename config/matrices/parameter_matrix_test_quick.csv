@@ -1,0 +1,2 @@
+run_id,eccentricity,a_b_ratio,ecc_label,N,phi,radius,E_per_N,v_max,seed,design
+1,0.866,2.0,Moderate,20,0.06,0.07745966692414834,0.32,1.0,1,test
