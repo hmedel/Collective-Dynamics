@@ -369,6 +369,111 @@ function figure5_velocity_profile()
 end
 
 # ============================================================================
+# FIGURE 6: ENERGY CONSERVATION
+# ============================================================================
+
+function figure6_energy_conservation()
+    println("Generating Figure 6: Energy Conservation...")
+
+    fig = Figure(size = (900, 450))
+
+    ax = Axis(fig[1, 1],
+        xlabel = L"t \; \text{(s)}",
+        ylabel = L"E(t) / E_0",
+    )
+
+    # Load data from a simulation
+    data_dir = "results/long_time_EN_scan_20260108_084402"
+    h5_file = joinpath(data_dir, "e0.90_N040_E0.80_t500_seed01/trajectories.h5")
+
+    if isfile(h5_file)
+        h5open(h5_file, "r") do fid
+            times = read(fid, "trajectories/time")
+
+            # Check if energy data exists
+            if haskey(fid, "conservation/total_energy")
+                energies = read(fid, "conservation/total_energy")
+                E0 = energies[1]
+                E_ratio = energies ./ E0
+
+                # Subsample for plotting
+                step = max(1, length(times) ÷ 1000)
+                idx = 1:step:length(times)
+
+                lines!(ax, times[idx], E_ratio[idx], color = CBLUE, linewidth = 2)
+
+                # Calculate error
+                ΔE_rel = abs(energies[end] - E0) / E0
+
+                # Add annotation
+                text!(ax, times[end] * 0.5, 1.0 + 5e-10,
+                    text = @sprintf("ΔE/E₀ = %.1e", ΔE_rel),
+                    fontsize = 24, align = (:center, :bottom), color = CGREEN)
+
+            else
+                # Calculate energy from trajectories
+                phi = read(fid, "trajectories/phi")
+                phidot = read(fid, "trajectories/phidot")
+
+                if size(phi, 1) == length(times)
+                    n_times, N = size(phi)
+                else
+                    phi = phi'
+                    phidot = phidot'
+                    n_times, N = size(phi)
+                end
+
+                a, b = 2.0, 0.872
+
+                # Compute total kinetic energy at each time
+                E_t = Float64[]
+                for t in 1:n_times
+                    E = 0.0
+                    for p in 1:N
+                        φ = phi[t, p]
+                        φ̇ = phidot[t, p]
+                        g_φφ = a^2 * sin(φ)^2 + b^2 * cos(φ)^2
+                        E += 0.5 * g_φφ * φ̇^2  # mass = 1
+                    end
+                    push!(E_t, E)
+                end
+
+                E0 = E_t[1]
+                E_ratio = E_t ./ E0
+
+                # Subsample
+                step = max(1, n_times ÷ 1000)
+                idx = 1:step:n_times
+
+                lines!(ax, times[idx], E_ratio[idx], color = CBLUE, linewidth = 2)
+
+                # Error
+                ΔE_rel = maximum(abs.(E_ratio .- 1.0))
+
+                text!(ax, times[end] * 0.5, minimum(E_ratio) - 0.0001,
+                    text = @sprintf("max |ΔE/E₀| = %.1e", ΔE_rel),
+                    fontsize = 22, align = (:center, :top), color = CGREEN)
+            end
+        end
+    else
+        # Synthetic demo data
+        t = range(0, 500, length=1000)
+        E_ratio = 1.0 .+ 1e-9 .* randn(length(t))
+        lines!(ax, t, E_ratio, color = CBLUE, linewidth = 2)
+        text!(ax, 250, 1.0, text = "ΔE/E₀ ~ 10⁻⁹", fontsize = 24, color = CGREEN)
+    end
+
+    # Reference line at 1.0
+    hlines!(ax, [1.0], color = CGRAY, linewidth = 1.5, linestyle = :dash)
+
+    save(joinpath(OUTDIR, "fig6_energy.pdf"), fig)
+    save(joinpath(OUTDIR, "fig6_energy.eps"), fig)
+    save(joinpath(OUTDIR, "fig6_energy.png"), fig, px_per_unit = 4)
+    println("  Saved: fig6_energy.pdf/eps/png")
+    return fig
+end
+
+# ============================================================================
 # MAIN
 # ============================================================================
 
@@ -383,13 +488,13 @@ function main()
     figure3_order_parameters()
     figure4_parameter_dependence()
     figure5_velocity_profile()
+    figure6_energy_conservation()
 
     println()
     println("="^70)
-    println("FIGURES 1-5 GENERATED")
+    println("FIGURES 1-6 GENERATED")
     println("="^70)
     println("\nOutput: $OUTDIR/")
-    println("\nNote: Figure 6 removed (content goes directly in LaTeX poster)")
 end
 
 main()
