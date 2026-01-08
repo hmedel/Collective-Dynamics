@@ -91,6 +91,100 @@ Clusters are **metastable**, not permanent:
 
 ---
 
+## Physical Interpretation: Is This a Phase Transition?
+
+### The Original Hypothesis
+
+The initial observation of spontaneous cluster formation suggested a **non-equilibrium phase transition** where the system transitions from a homogeneous (disordered) state to an ordered (clustered) state.
+
+### Evidence Against Traditional Phase Transition
+
+The January 2026 data reveals features **inconsistent** with a traditional phase transition:
+
+1. **No sharp transition**: Order parameters (ψ, S) fluctuate continuously rather than showing a sharp jump at a critical point.
+
+2. **Metastability, not bistability**: The system doesn't settle into either ordered or disordered state - it fluctuates between them (6-14% time clustered).
+
+3. **Wrong temperature dependence**: In equilibrium transitions, lower T favors ordered states. Here, **higher E/N (temperature) promotes clustering** - the opposite of equilibrium behavior.
+
+4. **No critical slowing down**: Formation time τ ~ 15-44s doesn't diverge near any parameter value.
+
+### Alternative Interpretation: Curvature-Induced Effective Potential
+
+A more accurate picture is that the **Riemannian metric creates an effective potential landscape**:
+
+```
+Effective dynamics on the ellipse:
+
+The metric g_φφ(φ) = r²(φ) + (dr/dφ)² varies with position:
+- At poles (φ = 0, π):    g_φφ is LARGE → particles move SLOWLY
+- At equator (φ = π/2):   g_φφ is SMALL → particles move FAST
+
+This is equivalent to motion in an effective potential:
+    V_eff(φ) ∝ -ln(g_φφ(φ))
+
+The poles are potential MINIMA → particles accumulate there.
+```
+
+### Why Higher Temperature Promotes Clustering
+
+This counter-intuitive result makes sense in the effective potential picture:
+
+1. **At low E/N**: Particles don't have enough energy to explore the full manifold. They get trapped in local configurations.
+
+2. **At high E/N**: Particles can traverse the entire ellipse, repeatedly sampling the poles. They spend more TIME at poles (where they're slow), leading to higher TIME-AVERAGED density there.
+
+3. **Analogy**: Cars on a highway with a speed limit variation. Faster average speed → more cars pile up at the slow zones (bottlenecks).
+
+### The Correct Physical Picture
+
+**This is NOT a phase transition. It is:**
+
+1. **Geometric accumulation**: Particles spend more time where the metric makes them slow.
+
+2. **Two-cluster state**: The ellipse has two equivalent slow regions (poles) → nematic order.
+
+3. **Metastable dynamics**: Thermal fluctuations cause particles to escape and re-enter clusters.
+
+4. **Non-ergodic sampling**: The time-averaged density ρ(φ) ∝ 1/v(φ) ∝ √g_φφ(φ), not uniform.
+
+### Testable Predictions
+
+If this interpretation is correct:
+
+1. **Density profile**: ρ(φ) should scale as √g_φφ(φ) in steady state
+
+2. **Formation time**: τ should decrease with increasing eccentricity (larger κ_max/κ_min ratio) ✓ CONFIRMED
+
+3. **Two clusters always**: For any ellipse with e > 0, we expect TWO clusters (one at each pole), not one ✓ CONFIRMED
+
+4. **Circle limit**: For e → 0 (circle), g_φφ = constant → no clustering ✓ (to be verified)
+
+### Relation to Traffic Flow and Active Matter
+
+This phenomenon has analogies in other systems:
+
+| System | "Slow region" | Result |
+|--------|---------------|--------|
+| **Ellipse (this work)** | High curvature poles | Two-cluster state |
+| **Traffic flow** | Speed limit zones | Traffic jams |
+| **Active matter** | High friction regions | Motility-induced clustering |
+| **Bacterial motion** | Obstacles/walls | Accumulation at boundaries |
+
+The common mechanism is: **spatially varying mobility leads to density inhomogeneity**.
+
+### Open Questions
+
+1. **Quantitative prediction**: Can we derive ρ(φ) analytically from the metric?
+
+2. **Fluctuations**: What determines the cluster lifetime distribution?
+
+3. **N-dependence**: Does the effect persist/strengthen for large N?
+
+4. **3D extension**: On ellipsoids, do we get cluster "rings" at the equator?
+
+---
+
 ## Original Findings (November 2025)
 
 ## Executive Summary
