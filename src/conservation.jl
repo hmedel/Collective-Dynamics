@@ -328,15 +328,15 @@ end
 
 if !@isdefined(kinetic_energy)
     function kinetic_energy(p::Particle{T}, a::T, b::T) where {T <: AbstractFloat}
-        g = metric_ellipse(p.θ, a, b)
-        return 0.5 * p.mass * g * p.θ_dot^2
+        g = metric_ellipse(p.φ, a, b)
+        return 0.5 * p.mass * g * p.φ_dot^2
     end
 end
 
 if !@isdefined(angular_momentum)
     function angular_momentum(p::Particle{T}, a::T, b::T) where {T <: AbstractFloat}
-        g = metric_ellipse(p.θ, a, b)
-        return p.mass * g * p.θ_dot
+        g = metric_ellipse(p.φ, a, b)
+        return p.mass * g * p.φ_dot
     end
 end
 

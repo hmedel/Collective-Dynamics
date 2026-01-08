@@ -167,14 +167,14 @@ end
 Calcula el momento conjugado (momento canónico) de la partícula en la variedad.
 
 # Matemática
-Para una partícula moviéndose en una elipse, el momento conjugado es:
+Para una partícula moviéndose en una elipse con parametrización polar φ:
 ```
-p_θ = m √g(θ) θ̇ = m √[a²sin²(θ) + b²cos²(θ)] θ̇
+p_φ = m g_φφ φ̇ = m [a²sin²(φ) + b²cos²(φ)] φ̇
 ```
 
-donde g(θ) = a²sin²(θ) + b²cos²(θ) es la componente de la métrica.
+donde g_φφ = a²sin²(φ) + b²cos²(φ) es la componente de la métrica.
 
-**IMPORTANTE:** La cantidad conservada incluye la raíz cuadrada √g(θ), no g(θ) directamente.
+**IMPORTANTE:** Para parametrización polar, la cantidad conservada es m·g·φ̇, no m·√g·φ̇.
 
 # Conservación
 Esta cantidad **SÍ se conserva** para cada partícula en movimiento geodésico libre.
@@ -184,8 +184,10 @@ si se usa transporte paralelo correctamente.
 # Relación con el Hamiltoniano
 Esta es la cantidad que aparece en las ecuaciones de Hamilton para la elipse:
 ```
-H = p_θ² / (2m g(θ))  donde p_θ = m √g(θ) θ̇
+H = p_φ² / (2m g(φ))  donde p_φ = m g(φ) φ̇
 ```
+
+Equivalentemente: H = (1/2) m g(φ) φ̇² = T (energía cinética)
 
 # Nota
 Anteriormente llamada "angular_momentum" pero ese nombre era confuso porque
@@ -197,7 +199,7 @@ el verdadero momento angular L = r × p NO se conserva en elipses.
     b::T
 ) where {T <: AbstractFloat}
     g = metric_ellipse(p.θ, a, b)
-    return p.mass * sqrt(g) * p.θ_dot
+    return p.mass * g * p.θ_dot
 end
 
 """
