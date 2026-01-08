@@ -125,8 +125,9 @@ function figure1_system()
     Label(fig[2, 1:2], params, fontsize = 22, halign = :center)
 
     save(joinpath(OUTDIR, "fig1_system.pdf"), fig)
+    save(joinpath(OUTDIR, "fig1_system.eps"), fig)
     save(joinpath(OUTDIR, "fig1_system.png"), fig, px_per_unit = 4)
-    println("  Saved: fig1_system.pdf/png")
+    println("  Saved: fig1_system.pdf/eps/png")
     return fig
 end
 
@@ -192,8 +193,9 @@ function figure2_main_result()
         orientation = :horizontal, framevisible = false, labelsize = 24)
 
     save(joinpath(OUTDIR, "fig2_main_result.pdf"), fig)
+    save(joinpath(OUTDIR, "fig2_main_result.eps"), fig)
     save(joinpath(OUTDIR, "fig2_main_result.png"), fig, px_per_unit = 4)
-    println("  Saved: fig2_main_result.pdf/png")
+    println("  Saved: fig2_main_result.pdf/eps/png")
     return fig
 end
 
@@ -274,8 +276,9 @@ function figure3_order_parameters()
     text!(ax2, 0, -1.9, text = "Two clusters at φ and φ+π", fontsize = 18, align = (:center, :top))
 
     save(joinpath(OUTDIR, "fig3_two_clusters.pdf"), fig)
+    save(joinpath(OUTDIR, "fig3_two_clusters.eps"), fig)
     save(joinpath(OUTDIR, "fig3_two_clusters.png"), fig, px_per_unit = 4)
-    println("  Saved: fig3_two_clusters.pdf/png")
+    println("  Saved: fig3_two_clusters.pdf/eps/png")
     return fig
 end
 
@@ -335,8 +338,9 @@ function figure4_parameter_dependence()
     text!(ax2, 2.5, 50, text = "3× faster\nat e = 0.9", fontsize = 18, color = CGREEN)
 
     save(joinpath(OUTDIR, "fig4_parameters.pdf"), fig)
+    save(joinpath(OUTDIR, "fig4_parameters.eps"), fig)
     save(joinpath(OUTDIR, "fig4_parameters.png"), fig, px_per_unit = 4)
-    println("  Saved: fig4_parameters.pdf/png")
+    println("  Saved: fig4_parameters.pdf/eps/png")
     return fig
 end
 
@@ -418,8 +422,9 @@ function figure5_mechanism()
     ylims!(ax2, 0, 1)
 
     save(joinpath(OUTDIR, "fig5_mechanism.pdf"), fig)
+    save(joinpath(OUTDIR, "fig5_mechanism.eps"), fig)
     save(joinpath(OUTDIR, "fig5_mechanism.png"), fig, px_per_unit = 4)
-    println("  Saved: fig5_mechanism.pdf/png")
+    println("  Saved: fig5_mechanism.pdf/eps/png")
     return fig
 end
 
@@ -478,8 +483,9 @@ function figure6_summary()
         fontsize = 32, color = CBLUE, padding = (0, 0, 20, 0))
 
     save(joinpath(OUTDIR, "fig6_summary.pdf"), fig)
+    save(joinpath(OUTDIR, "fig6_summary.eps"), fig)
     save(joinpath(OUTDIR, "fig6_summary.png"), fig, px_per_unit = 4)
-    println("  Saved: fig6_summary.pdf/png")
+    println("  Saved: fig6_summary.pdf/eps/png")
     return fig
 end
 
@@ -579,8 +585,9 @@ function figure_poster_combined()
     ylims!(ax_mech, 0, 1)
 
     save(joinpath(OUTDIR, "poster_combined.pdf"), fig)
+    save(joinpath(OUTDIR, "poster_combined.eps"), fig)
     save(joinpath(OUTDIR, "poster_combined.png"), fig, px_per_unit = 3)
-    println("  Saved: poster_combined.pdf/png")
+    println("  Saved: poster_combined.pdf/eps/png")
     return fig
 end
 
