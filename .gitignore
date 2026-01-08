@@ -12,9 +12,17 @@ logs/
 # Manifest.toml puede regenerarse
 Manifest.toml
 
-# Resultados de simulaciones (muy grandes)
-# Nota: Descomenta si no quieres subir resultados
-# results/
+# Resultados de simulaciones (muy grandes, regenerables)
+results/
+results_experiment_*/
+phase_space_plots/
+
+# Imágenes regenerables
+*.png
+
+# Archivos temporales de campaña
+failed_runs.txt
+relaunch_commands.txt
 
 # Archivos temporales del sistema
 .DS_Store
