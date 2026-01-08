@@ -375,95 +375,59 @@ end
 function figure6_energy_conservation()
     println("Generating Figure 6: Energy Conservation...")
 
-    fig = Figure(size = (900, 450))
+    fig = Figure(size = (800, 400))
 
     ax = Axis(fig[1, 1],
         xlabel = L"t \; \text{(s)}",
         ylabel = L"E(t) / E_0",
     )
 
-    # Load data from a simulation
     data_dir = "results/long_time_EN_scan_20260108_084402"
     h5_file = joinpath(data_dir, "e0.90_N040_E0.80_t500_seed01/trajectories.h5")
 
     if isfile(h5_file)
         h5open(h5_file, "r") do fid
             times = read(fid, "trajectories/time")
+            phi = read(fid, "trajectories/phi")
+            phidot = read(fid, "trajectories/phidot")
 
-            # Check if energy data exists
-            if haskey(fid, "conservation/total_energy")
-                energies = read(fid, "conservation/total_energy")
-                E0 = energies[1]
-                E_ratio = energies ./ E0
-
-                # Subsample for plotting
-                step = max(1, length(times) ÷ 1000)
-                idx = 1:step:length(times)
-
-                lines!(ax, times[idx], E_ratio[idx], color = CBLUE, linewidth = 2)
-
-                # Calculate error
-                ΔE_rel = abs(energies[end] - E0) / E0
-
-                # Add annotation
-                text!(ax, times[end] * 0.5, 1.0 + 5e-10,
-                    text = @sprintf("ΔE/E₀ = %.1e", ΔE_rel),
-                    fontsize = 24, align = (:center, :bottom), color = CGREEN)
-
+            if size(phi, 1) == length(times)
+                n_times, N = size(phi)
             else
-                # Calculate energy from trajectories
-                phi = read(fid, "trajectories/phi")
-                phidot = read(fid, "trajectories/phidot")
-
-                if size(phi, 1) == length(times)
-                    n_times, N = size(phi)
-                else
-                    phi = phi'
-                    phidot = phidot'
-                    n_times, N = size(phi)
-                end
-
-                a, b = 2.0, 0.872
-
-                # Compute total kinetic energy at each time
-                E_t = Float64[]
-                for t in 1:n_times
-                    E = 0.0
-                    for p in 1:N
-                        φ = phi[t, p]
-                        φ̇ = phidot[t, p]
-                        g_φφ = a^2 * sin(φ)^2 + b^2 * cos(φ)^2
-                        E += 0.5 * g_φφ * φ̇^2  # mass = 1
-                    end
-                    push!(E_t, E)
-                end
-
-                E0 = E_t[1]
-                E_ratio = E_t ./ E0
-
-                # Subsample
-                step = max(1, n_times ÷ 1000)
-                idx = 1:step:n_times
-
-                lines!(ax, times[idx], E_ratio[idx], color = CBLUE, linewidth = 2)
-
-                # Error
-                ΔE_rel = maximum(abs.(E_ratio .- 1.0))
-
-                text!(ax, times[end] * 0.5, minimum(E_ratio) - 0.0001,
-                    text = @sprintf("max |ΔE/E₀| = %.1e", ΔE_rel),
-                    fontsize = 22, align = (:center, :top), color = CGREEN)
+                phi = phi'
+                phidot = phidot'
+                n_times, N = size(phi)
             end
+
+            a, b = 2.0, 0.872
+
+            # Compute total kinetic energy at each time
+            E_t = Float64[]
+            for t in 1:n_times
+                E = 0.0
+                for p in 1:N
+                    φ = phi[t, p]
+                    φ̇ = phidot[t, p]
+                    g_φφ = a^2 * sin(φ)^2 + b^2 * cos(φ)^2
+                    E += 0.5 * g_φφ * φ̇^2
+                end
+                push!(E_t, E)
+            end
+
+            E0 = E_t[1]
+            E_ratio = E_t ./ E0
+
+            step = max(1, n_times ÷ 1000)
+            idx = 1:step:n_times
+
+            lines!(ax, times[idx], E_ratio[idx], color = CBLUE, linewidth = 2)
         end
     else
-        # Synthetic demo data
         t = range(0, 500, length=1000)
         E_ratio = 1.0 .+ 1e-9 .* randn(length(t))
         lines!(ax, t, E_ratio, color = CBLUE, linewidth = 2)
-        text!(ax, 250, 1.0, text = "ΔE/E₀ ~ 10⁻⁹", fontsize = 24, color = CGREEN)
     end
 
-    # Reference line at 1.0
     hlines!(ax, [1.0], color = CGRAY, linewidth = 1.5, linestyle = :dash)
 
     save(joinpath(OUTDIR, "fig6_energy.pdf"), fig)
@@ -474,12 +438,124 @@ function figure6_energy_conservation()
 end
 
 # ============================================================================
+# FIGURE 7: PHASE SPACE HEATMAP (Initial vs Final)
+# ============================================================================
+
+function figure7_phase_space_heatmap()
+    println("Generating Figure 7: Phase Space Heatmap...")
+
+    fig = Figure(size = (1200, 500))
+
+    data_dir = "results/long_time_EN_scan_20260108_084402"
+    h5_file = joinpath(data_dir, "e0.90_N040_E0.80_t500_seed01/trajectories.h5")
+
+    n_φ_bins = 36
+    n_φ̇_bins = 25
+
+    if isfile(h5_file)
+        h5open(h5_file, "r") do fid
+            times = read(fid, "trajectories/time")
+            phi = read(fid, "trajectories/phi")
+            phidot = read(fid, "trajectories/phidot")
+
+            if size(phi, 1) == length(times)
+                n_times, N = size(phi)
+            else
+                phi = phi'
+                phidot = phidot'
+                n_times, N = size(phi)
+            end
+
+            # Get global φ̇ range for consistent colorbar
+            φ̇_min = minimum(phidot) * 1.1
+            φ̇_max = maximum(phidot) * 1.1
+
+            φ_edges = collect(range(0, 2π, length=n_φ_bins+1))
+            φ̇_edges = collect(range(φ̇_min, φ̇_max, length=n_φ̇_bins+1))
+
+            # Function to compute histogram
+            function compute_histogram(t_start, t_end)
+                H = zeros(n_φ_bins, n_φ̇_bins)
+                for t in t_start:t_end
+                    for p in 1:N
+                        φ = mod(phi[t, p], 2π)
+                        φ̇ = phidot[t, p]
+
+                        i = clamp(searchsortedfirst(φ_edges, φ) - 1, 1, n_φ_bins)
+                        j = clamp(searchsortedfirst(φ̇_edges, φ̇) - 1, 1, n_φ̇_bins)
+                        H[i, j] += 1
+                    end
+                end
+                H_norm = H ./ maximum(H)
+                return H_norm
+            end
+
+            # Initial: first 10% of simulation
+            t_early_end = max(1, n_times ÷ 10)
+            H_initial = compute_histogram(1, t_early_end)
+
+            # Final: last 10% of simulation
+            t_late_start = n_times - n_times ÷ 10
+            H_final = compute_histogram(t_late_start, n_times)
+
+            # Panel 1: Initial
+            ax1 = Axis(fig[1, 1],
+                xlabel = L"\phi",
+                ylabel = L"\dot{\phi}",
+                title = @sprintf("t < %.0f s", times[t_early_end]),
+            )
+
+            hm1 = heatmap!(ax1, φ_edges, φ̇_edges, H_initial,
+                colormap = :viridis)
+
+            ax1.xticks = ([0, π, 2π], ["0", "π", "2π"])
+
+            # Panel 2: Final
+            ax2 = Axis(fig[1, 2],
+                xlabel = L"\phi",
+                ylabel = L"\dot{\phi}",
+                title = @sprintf("t > %.0f s", times[t_late_start]),
+            )
+
+            hm2 = heatmap!(ax2, φ_edges, φ̇_edges, H_final,
+                colormap = :viridis)
+
+            ax2.xticks = ([0, π, 2π], ["0", "π", "2π"])
+
+            # Shared colorbar
+            Colorbar(fig[1, 3], hm2, label = "Density", width = 20)
+        end
+    else
+        # Demo with synthetic data
+        ax1 = Axis(fig[1, 1], title = "Initial (uniform)")
+        ax2 = Axis(fig[1, 2], title = "Final (clustered)")
+
+        φ_c = range(0, 2π, length=36)
+        φ̇_c = range(-2, 2, length=25)
+
+        H_init = rand(36, 25)
+        H_final = zeros(36, 25)
+        H_final[1:5, :] .= 1
+        H_final[17:21, :] .= 1
+
+        heatmap!(ax1, φ_c, φ̇_c, H_init', colormap = :viridis)
+        heatmap!(ax2, φ_c, φ̇_c, H_final', colormap = :viridis)
+    end
+
+    save(joinpath(OUTDIR, "fig7_phase_space.pdf"), fig)
+    save(joinpath(OUTDIR, "fig7_phase_space.eps"), fig)
+    save(joinpath(OUTDIR, "fig7_phase_space.png"), fig, px_per_unit = 4)
+    println("  Saved: fig7_phase_space.pdf/eps/png")
+    return fig
+end
+
+# ============================================================================
 # MAIN
 # ============================================================================
 
 function main()
     println("="^70)
-    println("GENERATING POSTER FIGURES (v3 - Clean)")
+    println("GENERATING POSTER FIGURES (v3)")
     println("="^70)
     println()
 
@@ -489,10 +565,11 @@ function main()
     figure4_parameter_dependence()
     figure5_velocity_profile()
     figure6_energy_conservation()
+    figure7_phase_space_heatmap()
 
     println()
     println("="^70)
-    println("FIGURES 1-6 GENERATED")
+    println("FIGURES 1-7 GENERATED")
     println("="^70)
     println("\nOutput: $OUTDIR/")
 end
