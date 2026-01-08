@@ -19,8 +19,9 @@ using Plots
 using DataFrames, CSV
 using Printf
 
-# Include HDF5 loader
-include("src/io_hdf5.jl")
+# Include HDF5 loader (relative to project root)
+const PROJECT_ROOT = dirname(dirname(@__DIR__))
+include(joinpath(PROJECT_ROOT, "src", "io_hdf5.jl"))
 
 """
     compute_distribution_metrics(velocities)
