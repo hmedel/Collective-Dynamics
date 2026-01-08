@@ -13,9 +13,13 @@
 **Caption**: (Left) Clustering probability increases with effective temperature E/N—counter to equilibrium expectations. (Right) Cluster formation time τ decreases with eccentricity: higher curvature contrast leads to faster aggregation.
 
 ## Figure 5: Velocity Profile and Density
-**Caption**: Comparison of angular density ρ(φ) (blue bars), angular velocity φ̇ ∝ 1/√g_φφ (orange dashed), and curvature κ(φ) (green) for e=0.9. At the poles (φ = 0, π), curvature is maximum while angular velocity is minimum. Particles accumulate where they move slowest: the measured density correlates with curvature (r = +0.89), not with the equilibrium prediction. Vertical dotted lines mark the pole positions.
+**Caption**: Comparison of angular density ρ(φ) (blue bars), angular velocity φ̇ ∝ 1/√g_φφ (orange dashed), and curvature κ(φ) (green) for e=0.9. At the poles (φ = 0, π), curvature is maximum while angular velocity is minimum. Particles accumulate where they move slowest: the measured density correlates with curvature (r = +0.89), not with the equilibrium prediction.
 
-*(Figure 6 removed - summary content goes directly in LaTeX poster)*
+## Figure 6: Energy Conservation
+**Caption**: Total energy E(t) normalized by initial energy E₀ over 500 seconds. The ratio remains constant within numerical precision (ΔE/E₀ ~ 10⁻⁹), confirming the accuracy of symplectic integration and validating that observed clustering is a physical phenomenon.
+
+## Figure 7: Phase Space Evolution
+**Caption**: Reduced phase space density in (φ, φ̇) coordinates. Left: early times (t < 50s) show particles spread across all angles. Right: late times (t > 450s) show concentration at the poles (φ ≈ 0, π), demonstrating the emergence of two-cluster states from initially uniform conditions.
 
 ---
 
