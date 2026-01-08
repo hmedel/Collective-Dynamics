@@ -473,7 +473,7 @@ function figure7_phase_space_heatmap()
             φ_edges = collect(range(0, 2π, length=n_φ_bins+1))
             φ̇_edges = collect(range(φ̇_min, φ̇_max, length=n_φ̇_bins+1))
 
-            # Function to compute histogram
+            # Function to compute histogram (raw counts)
             function compute_histogram(t_start, t_end)
                 H = zeros(n_φ_bins, n_φ̇_bins)
                 for t in t_start:t_end
@@ -486,8 +486,7 @@ function figure7_phase_space_heatmap()
                         H[i, j] += 1
                     end
                 end
-                H_norm = H ./ maximum(H)
-                return H_norm
+                return H
             end
 
             # Initial: first 10% of simulation
@@ -498,6 +497,19 @@ function figure7_phase_space_heatmap()
             t_late_start = n_times - n_times ÷ 10
             H_final = compute_histogram(t_late_start, n_times)
 
+            # Normalize by uniform expectation: N_samples / n_bins
+            n_samples_init = (t_early_end) * N
+            n_samples_final = (n_times - t_late_start + 1) * N
+            uniform_init = n_samples_init / (n_φ_bins * n_φ̇_bins)
+            uniform_final = n_samples_final / (n_φ_bins * n_φ̇_bins)
+
+            # Ratio to uniform: 1 = uniform, >1 = excess, <1 = deficit
+            H_init_ratio = H_initial ./ uniform_init
+            H_final_ratio = H_final ./ uniform_final
+
+            # Use same color scale for both
+            vmax = max(maximum(H_init_ratio), maximum(H_final_ratio))
+
             # Panel 1: Initial
             ax1 = Axis(fig[1, 1],
                 xlabel = L"\phi",
@@ -505,8 +517,8 @@ function figure7_phase_space_heatmap()
                 title = @sprintf("t < %.0f s", times[t_early_end]),
             )
 
-            hm1 = heatmap!(ax1, φ_edges, φ̇_edges, H_initial,
-                colormap = :viridis)
+            hm1 = heatmap!(ax1, φ_edges, φ̇_edges, H_init_ratio,
+                colormap = :viridis, colorrange = (0, vmax))
 
             ax1.xticks = ([0, π, 2π], ["0", "π", "2π"])
 
@@ -517,13 +529,13 @@ function figure7_phase_space_heatmap()
                 title = @sprintf("t > %.0f s", times[t_late_start]),
             )
 
-            hm2 = heatmap!(ax2, φ_edges, φ̇_edges, H_final,
-                colormap = :viridis)
+            hm2 = heatmap!(ax2, φ_edges, φ̇_edges, H_final_ratio,
+                colormap = :viridis, colorrange = (0, vmax))
 
             ax2.xticks = ([0, π, 2π], ["0", "π", "2π"])
 
             # Shared colorbar
-            Colorbar(fig[1, 3], hm2, label = "Density", width = 20)
+            Colorbar(fig[1, 3], hm2, label = L"\rho / \rho_{\mathrm{uniform}}", width = 20)
         end
     else
         # Demo with synthetic data
