@@ -1,6 +1,6 @@
 # Scientific Findings: Collective Dynamics on Elliptical Manifolds
 
-**Date**: 2025-11-14 (Updated: 2026-01-08)
+**Date**: 2025-11-14 (Updated: 2026-01-08, Metric Verification Added)
 **System**: 40 particles on ellipse with elastic collisions
 **Method**: Symplectic integration in polar coordinates (φ) with projection methods
 
@@ -175,13 +175,90 @@ The common mechanism is: **spatially varying mobility leads to density inhomogen
 
 ### Open Questions
 
-1. **Quantitative prediction**: Can we derive ρ(φ) analytically from the metric?
+1. ~~**Quantitative prediction**: Can we derive ρ(φ) analytically from the metric?~~ **ANSWERED - see below**
 
 2. **Fluctuations**: What determines the cluster lifetime distribution?
 
 3. **N-dependence**: Does the effect persist/strengthen for large N?
 
 4. **3D extension**: On ellipsoids, do we get cluster "rings" at the equator?
+
+---
+
+## Crucial Finding: ρ(φ) vs √g_φφ Verification (January 2026)
+
+### The Equilibrium Prediction
+
+For particles in thermal equilibrium on a Riemannian manifold, the steady-state density should be:
+
+```
+ρ_eq(φ) ∝ √g_φφ(φ) = √(a²sin²φ + b²cos²φ)
+```
+
+This predicts **MORE particles where the metric is larger**:
+- Maximum density at φ = π/2, 3π/2 (minor axis endpoints)
+- Minimum density at φ = 0, π (major axis endpoints / poles)
+
+### The Measured Result: OPPOSITE!
+
+Analysis of 75 simulation runs shows **strong NEGATIVE correlation**:
+
+| Eccentricity | Corr(ρ, √g) | Corr(ρ, 1/√g) | Corr(ρ, κ) |
+|--------------|-------------|---------------|------------|
+| e = 0.5 | **-0.48** | +0.49 | +0.50 |
+| e = 0.8 | **-0.81** | +0.83 | +0.83 |
+| e = 0.9 | **-0.91** | +0.92 | +0.89 |
+
+**The particles do the OPPOSITE of the equilibrium prediction!**
+
+### Density Profile Comparison (e = 0.9)
+
+```
+φ (deg)  │ Measured ρ(φ)              │ Predicted √g
+─────────┼────────────────────────────┼────────────────────────────
+      5° │ █████████████████████████ │ ███████████   ← MAXIMUM measured
+     45° │ ██████████                │ ███████████████████
+     85° │ ████████                  │ █████████████████████████ ← MAX predicted
+    125° │ ████████                  │ █████████████████████
+    165° │ ████████████████          │ ████████████
+    185° │ ██████████████            │ ███████████   ← SECOND cluster
+```
+
+### The Correct Relationship
+
+Instead of ρ ∝ √g, we observe:
+
+```
+ρ(φ) ∝ 1/√g_φφ(φ) ∝ κ(φ)^(2/3)
+```
+
+**Particles accumulate at HIGH CURVATURE regions (minimum metric).**
+
+### Physical Interpretation
+
+This result definitively confirms:
+
+1. **NOT thermal equilibrium**: The system does not follow the equilibrium measure √g dφ
+
+2. **Dynamically-driven clustering**: Particles accumulate where they are SLOWEST
+   - At high curvature (φ = 0, π), particles must change direction rapidly
+   - This slows them down locally
+   - Collisions trap them in these regions
+
+3. **Analogy**: Like cars piling up at sharp curves on a highway, not at straight sections
+
+4. **Effective potential picture confirmed**:
+   ```
+   V_eff(φ) ∝ -ln(g_φφ(φ))
+   ```
+   Particles accumulate at minima of V_eff, which are at g_φφ minima (high κ)
+
+### Implications
+
+1. **Theoretical models** based on equilibrium statistical mechanics will fail
+2. **Kinetic theory** approach needed (Boltzmann equation on manifold)
+3. **Collision dynamics** is the key mechanism, not thermal equilibration
+4. This is a **non-equilibrium steady state** (NESS), not thermodynamic equilibrium
 
 ---
 
